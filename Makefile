@@ -22,14 +22,13 @@ install:
 	cd $(FRONTEND_DIR) && pnpm install
 
 setup:
-	cp $(BACKEND_DIR)/.env.example $(BACKEND_DIR)/.env
-	cp $(FRONTEND_DIR)/.env.example $(FRONTEND_DIR)/.env
+	node -e "require('fs').copyFileSync('$(BACKEND_DIR)/.env.example', '$(BACKEND_DIR)/.env')"
+	node -e "require('fs').copyFileSync('$(FRONTEND_DIR)/.env.example', '$(FRONTEND_DIR)/.env')"
 	@echo "Environment files created. Please update $(BACKEND_DIR)/.env with your DB credentials."
 
 up:
 	docker-compose up -d rabbitmq
 	@echo "Infrastructure is ready. Launching services..."
-	# Best practice for interview demo: run these in separate terminal tabs
 	@echo "Use 'make backend' and 'make frontend' in separate windows for best visibility."
 
 down:
