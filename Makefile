@@ -1,32 +1,36 @@
 # Spenza Webhook System Makefile
 # Orchestrates RabbitMQ (Docker), Local Postgres, Backend, and Frontend
 
-BACKEND_DIR = source_code/spenza-backend
-FRONTEND_DIR = source_code/spenza-frontend
+BACKEND_DIR = spenza-backend
+FRONTEND_DIR = spenza-frontend
 
-.PHONY: help install up down db-init seed backend frontend
+.PHONY: help install setup up down db-init seed backend frontend
 
 help:
+	@echo "Spenza Webhook System Management"
+	@echo "--------------------------------"
 	@echo "Available commands:"
 	@echo "  make install    - Install dependencies for both apps"
-	@echo "  make up         - Start RabbitMQ (Docker) and both apps locally"
-	@echo "  make down       - Stop Docker containers and local Node processes"
-	@echo "  make db-init    - Run migrations on local Postgres"
-	@echo "  make seed       - Seed initial event types"
-	@echo "  make backend    - Run only the backend locally"
-	@echo "  make frontend   - Run only the frontend locally"
+	@echo "  make setup      - Initialize .env files from examples"
+	@echo "  make up         - Start infrastructure and both apps (Full Init)"
+	@echo "  make down       - Stop infrastructure and local Node processes"
+	@echo "  make backend    - Run backend with full init (Migrations + Seed)"
+	@echo "  make frontend   - Run frontend development server"
 
 install:
 	cd $(BACKEND_DIR) && pnpm install
 	cd $(FRONTEND_DIR) && pnpm install
 
+setup:
+	cp $(BACKEND_DIR)/.env.example $(BACKEND_DIR)/.env
+	cp $(FRONTEND_DIR)/.env.example $(FRONTEND_DIR)/.env
+	@echo "Environment files created. Please update $(BACKEND_DIR)/.env with your DB credentials."
+
 up:
 	docker-compose up -d rabbitmq
-	@echo "RabbitMQ is starting. Launching apps..."
-	# Backgrounding is shell-dependent. On Windows PowerShell, it's best to run in separate terminals.
-	# This command attempts to start them, but for the best experience, use 'make backend' and 'make frontend' in separate tabs.
-	cd $(BACKEND_DIR) && start pnpm dev
-	cd $(FRONTEND_DIR) && start pnpm dev
+	@echo "Infrastructure is ready. Launching services..."
+	# Best practice for interview demo: run these in separate terminal tabs
+	@echo "Use 'make backend' and 'make frontend' in separate windows for best visibility."
 
 down:
 	docker-compose down
@@ -36,10 +40,11 @@ db-init:
 	cd $(BACKEND_DIR) && pnpm migration:run
 
 seed:
-	cd $(BACKEND_DIR) && npx ts-node -r tsconfig-paths/register src/database/seeds/event-types.seed.ts
+	cd $(BACKEND_DIR) && pnpm seed
 
 backend:
-	cd $(BACKEND_DIR) && pnpm dev
+	docker-compose up -d rabbitmq
+	cd $(BACKEND_DIR) && pnpm dev:init
 
 frontend:
 	cd $(FRONTEND_DIR) && pnpm dev
