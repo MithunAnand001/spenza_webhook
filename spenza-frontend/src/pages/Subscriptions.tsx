@@ -60,7 +60,7 @@ export default function Subscriptions() {
       </header>
 
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {subs?.map((sub: any) => (
+        {subs?.map((sub) => (
           <article 
             key={sub.id} 
             className="bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col"

@@ -4,17 +4,24 @@ import { ApiService } from '../api/api.service';
 import StatusBadge from '../components/StatusBadge';
 import { useWebSockets } from '../hooks/useWebSockets';
 import { Icons } from '../assets/Icons';
+import type { WebhookEventLog, EventType, LogFilterState } from '../types/api.types';
 
 export default function EventLog() {
   const queryClient = useQueryClient();
   const [expandedId, setExpandedId] = useState<number | null>(null);
-  const [page, setPage] = useState(1);
-  const [status, setStatus] = useState<string>('');
-  const [eventTypeId, setEventTypeId] = useState<number | undefined>(undefined);
-  const [search, setSearch] = useState<string>('');
-  const [sortField, setSortField] = useState<string>('createdOn');
-  const [sortOrder, setSortOrder] = useState<string>('DESC');
-  const limit = 20;
+
+  // Main Active State (Triggers the API)
+  const [activeFilters, setActiveFilters] = useState<LogFilterState>({
+    page: 1,
+    limit: 20,
+    status: '',
+    search: '',
+    sortField: 'createdOn',
+    sortOrder: 'DESC'
+  });
+
+  // Temporary State (For the UI Inputs - uncommitted)
+  const [tempFilters, setTempFilters] = useState<LogFilterState>(activeFilters);
 
   const { data: eventTypes } = useQuery({
     queryKey: ['event-types'],
@@ -25,35 +32,62 @@ export default function EventLog() {
   });
 
   const { data, isLoading, isFetching } = useQuery({
-    queryKey: ['events', page, status, eventTypeId, search, sortField, sortOrder],
+    queryKey: ['events', activeFilters],
     queryFn: async () => {
-      const res = await ApiService.getEvents(page, limit, status, eventTypeId, search, sortField, sortOrder);
+      const res = await ApiService.getEvents(activeFilters);
       return res.data.data;
     },
   });
 
   useWebSockets(() => {
-    if (page === 1) {
+    if (activeFilters.page === 1) {
       queryClient.invalidateQueries({ queryKey: ['events'] });
     }
     queryClient.invalidateQueries({ queryKey: ['recent-events'] });
   });
 
-  const toggleSort = (field: string) => {
-    if (sortField === field) {
-      setSortOrder(sortOrder === 'ASC' ? 'DESC' : 'ASC');
-    } else {
-      setSortField(field);
-      setSortOrder('DESC');
-    }
+  const handleApplyFilters = () => {
+    setActiveFilters({ ...tempFilters, page: 1 });
   };
 
-  const logs = (data as any)?.data || [];
-  const totalPages = (data as any)?.totalPages || 1;
+  const handleClearFilters = () => {
+    const reset: LogFilterState = {
+      ...activeFilters,
+      page: 1,
+      status: '',
+      search: '',
+      eventTypeId: undefined
+    };
+    setTempFilters(reset);
+    setActiveFilters(reset);
+  };
+
+  const toggleSort = (field: string) => {
+    const isSameField = activeFilters.sortField === field;
+    const newOrder = isSameField && activeFilters.sortOrder === 'DESC' ? 'ASC' : 'DESC';
+    
+    const newFilters: LogFilterState = {
+      ...activeFilters,
+      sortField: field,
+      sortOrder: newOrder
+    };
+    
+    setActiveFilters(newFilters);
+    setTempFilters(newFilters);
+  };
+
+  const handlePageChange = (newPage: number) => {
+    const updated = { ...activeFilters, page: newPage };
+    setActiveFilters(updated);
+    setTempFilters(updated);
+  };
+
+  const logs: WebhookEventLog[] = data?.data || [];
+  const totalPages = data?.totalPages || 1;
 
   const SortIcon = ({ field }: { field: string }) => {
-    if (sortField !== field) return <span className="ml-1 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity">↕</span>;
-    return <span className="ml-1 text-indigo-600">{sortOrder === 'ASC' ? '↑' : '↓'}</span>;
+    if (activeFilters.sortField !== field) return <span className="ml-1 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity">↕</span>;
+    return <span className="ml-1 text-indigo-600">{activeFilters.sortOrder === 'ASC' ? '↑' : '↓'}</span>;
   };
 
   return (
@@ -75,54 +109,65 @@ export default function EventLog() {
         </div>
       </header>
 
-      {/* Filters & Search */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-        <div className="relative">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-            {Icons.Activity()}
+      {/* Filters & Search UI */}
+      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+              {Icons.Activity()}
+            </div>
+            <input
+              type="text"
+              placeholder="Search Correlation ID..."
+              value={tempFilters.search}
+              onChange={(e) => setTempFilters({ ...tempFilters, search: e.target.value })}
+              onKeyDown={(e) => e.key === 'Enter' && handleApplyFilters()}
+              className="block w-full pl-10 pr-3 py-2.5 border border-slate-300 rounded-xl text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all bg-slate-50/50"
+            />
           </div>
-          <input
-            type="text"
-            placeholder="Search Correlation ID..."
-            value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-            className="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-          />
+
+          <select
+            value={tempFilters.status}
+            onChange={(e) => setTempFilters({ ...tempFilters, status: e.target.value })}
+            className="block w-full px-3 py-2.5 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all bg-slate-50/50 font-medium"
+          >
+            <option value="">All Statuses</option>
+            <option value="pending">Pending</option>
+            <option value="processing">Processing</option>
+            <option value="delivered">Delivered</option>
+            <option value="failed">Failed</option>
+            <option value="retrying">Retrying</option>
+          </select>
+
+          <select
+            value={tempFilters.eventTypeId || ''}
+            onChange={(e) => setTempFilters({ ...tempFilters, eventTypeId: e.target.value ? parseInt(e.target.value) : undefined })}
+            className="block w-full px-3 py-2.5 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all bg-slate-50/50 font-medium"
+          >
+            <option value="">All Event Types</option>
+            {eventTypes?.map((type: EventType) => (
+              <option key={type.id} value={type.id}>{type.name}</option>
+            ))}
+          </select>
+
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={handleApplyFilters}
+              className="flex-1 bg-indigo-600 text-white px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all shadow-md shadow-indigo-100 active:scale-95"
+            >
+              Apply Filters
+            </button>
+            <button
+              onClick={handleClearFilters}
+              className="px-4 py-2.5 text-sm font-bold text-slate-500 hover:text-slate-800 transition-colors"
+            >
+              Reset
+            </button>
+          </div>
         </div>
-
-        <select
-          value={status}
-          onChange={(e) => { setStatus(e.target.value); setPage(1); }}
-          className="block w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-        >
-          <option value="">All Statuses</option>
-          <option value="pending">Pending</option>
-          <option value="processing">Processing</option>
-          <option value="delivered">Delivered</option>
-          <option value="failed">Failed</option>
-          <option value="retrying">Retrying</option>
-        </select>
-
-        <select
-          value={eventTypeId || ''}
-          onChange={(e) => { setEventTypeId(e.target.value ? parseInt(e.target.value) : undefined); setPage(1); }}
-          className="block w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-        >
-          <option value="">All Event Types</option>
-          {eventTypes?.map((type: any) => (
-            <option key={type.id} value={type.id}>{type.name}</option>
-          ))}
-        </select>
-
-        <button
-          onClick={() => { setStatus(''); setEventTypeId(undefined); setSearch(''); setPage(1); }}
-          className="text-sm font-bold text-indigo-600 hover:text-indigo-800 transition-colors"
-        >
-          Clear Filters
-        </button>
       </div>
 
-      <div className="bg-white border border-slate-200 shadow-sm rounded-xl overflow-hidden">
+      <div className="bg-white border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-slate-200">
             <thead className="bg-slate-50/50">
@@ -162,7 +207,7 @@ export default function EventLog() {
                     <div className="flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div></div>
                   </td>
                 </tr>
-              ) : logs.map((log: any) => (
+              ) : logs.map((log: WebhookEventLog) => (
                 <React.Fragment key={log.id}>
                   <tr className={`hover:bg-slate-50/50 transition-colors ${expandedId === log.id ? 'bg-indigo-50/30' : ''}`}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-mono font-medium text-slate-600">#{log.id}</td>
@@ -248,15 +293,15 @@ export default function EventLog() {
         <nav className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between" aria-label="Pagination">
           <div className="flex-1 flex justify-between sm:hidden">
             <button
-              onClick={() => setPage(p => Math.max(1, p - 1))}
-              disabled={page === 1}
+              onClick={() => handlePageChange(Math.max(1, activeFilters.page - 1))}
+              disabled={activeFilters.page === 1}
               className="relative inline-flex items-center px-4 py-2 border border-slate-300 text-sm font-medium rounded-md text-slate-700 bg-white hover:bg-slate-50 disabled:opacity-50"
             >
               Previous
             </button>
             <button
-              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-              disabled={page === totalPages}
+              onClick={() => handlePageChange(Math.min(totalPages, activeFilters.page + 1))}
+              disabled={activeFilters.page === totalPages}
               className="ml-3 relative inline-flex items-center px-4 py-2 border border-slate-300 text-sm font-medium rounded-md text-slate-700 bg-white hover:bg-slate-50 disabled:opacity-50"
             >
               Next
@@ -265,22 +310,22 @@ export default function EventLog() {
           <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
             <div>
               <p className="text-sm text-slate-700">
-                Page <span className="font-bold">{page}</span> of <span className="font-bold">{totalPages}</span>
+                Page <span className="font-bold">{activeFilters.page}</span> of <span className="font-bold">{totalPages}</span>
               </p>
             </div>
             <div>
               <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
                 <button
-                  onClick={() => setPage(p => Math.max(1, p - 1))}
-                  disabled={page === 1}
+                  onClick={() => handlePageChange(Math.max(1, activeFilters.page - 1))}
+                  disabled={activeFilters.page === 1}
                   className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-slate-300 bg-white text-sm font-medium text-slate-500 hover:bg-slate-50 disabled:opacity-50"
                 >
                   <span className="sr-only">Previous</span>
                   {Icons.ChevronLeft()}
                 </button>
                 <button
-                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                  disabled={page === totalPages}
+                  onClick={() => handlePageChange(Math.min(totalPages, activeFilters.page + 1))}
+                  disabled={activeFilters.page === totalPages}
                   className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-slate-300 bg-white text-sm font-medium text-slate-500 hover:bg-slate-50 disabled:opacity-50"
                 >
                   <span className="sr-only">Next</span>

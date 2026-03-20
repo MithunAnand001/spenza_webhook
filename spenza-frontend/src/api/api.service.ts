@@ -12,7 +12,8 @@ import type {
   CreateSubscriptionResult,
   TestUrlResult,
   WebhookEventLog,
-  PaginatedResponse
+  PaginatedResponse,
+  LogFilterState
 } from '../types/api.types';
 
 export interface ApiError {
@@ -83,16 +84,8 @@ export const ApiService = {
   },
 
   // Events
-  getEvents: (
-    page: number, 
-    limit: number, 
-    status?: string, 
-    eventTypeId?: number, 
-    search?: string, 
-    sortField?: string, 
-    sortOrder?: string
-  ): Promise<AxiosResponse<ApiResponse<PaginatedResponse<WebhookEventLog>>>> => {
-    const { url, method } = ENDPOINTS.EVENTS.LIST(page, limit, status, eventTypeId, search, sortField, sortOrder);
+  getEvents: (filters: LogFilterState): Promise<AxiosResponse<ApiResponse<PaginatedResponse<WebhookEventLog>>>> => {
+    const { url, method } = ENDPOINTS.EVENTS.LIST(filters);
     return api.request({ url, method });
   },
 

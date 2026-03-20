@@ -79,6 +79,16 @@ export interface WebhookEventLog {
   };
 }
 
+export interface LogFilterState {
+  page: number;
+  limit: number;
+  status: string;
+  eventTypeId?: number;
+  search: string;
+  sortField: string;
+  sortOrder: 'ASC' | 'DESC';
+}
+
 export interface PaginatedResponse<T> {
   data: T[];
   total: number;

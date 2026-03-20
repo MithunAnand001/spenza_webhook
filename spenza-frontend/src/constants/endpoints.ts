@@ -9,7 +9,8 @@ export const ENDPOINTS = {
     GET: (id: string | number) => ({ url: `/event-types/${id}`, method: 'GET' }),
   },
   EVENTS: {
-    LIST: (page = 1, limit = 20, status?: string, eventTypeId?: number, search?: string, sortField?: string, sortOrder?: string) => {
+    LIST: (filters: any) => {
+      const { page, limit, status, eventTypeId, search, sortField, sortOrder } = filters;
       let url = `/events?page=${page}&limit=${limit}`;
       if (status) url += `&status=${status}`;
       if (eventTypeId) url += `&eventTypeId=${eventTypeId}`;
