@@ -1,3 +1,5 @@
+import { WebhookEventStatus } from '../constants/status';
+
 // Auth DTOs
 export interface LoginDto {
   email: string;
@@ -59,16 +61,6 @@ export interface TestUrlResult {
 }
 
 // Webhook Logs
-export const WebhookEventStatus = {
-  PENDING: 'pending',
-  PROCESSING: 'processing',
-  DELIVERED: 'delivered',
-  FAILED: 'failed',
-  RETRYING: 'retrying',
-} as const;
-
-export type WebhookEventStatus = (typeof WebhookEventStatus)[keyof typeof WebhookEventStatus];
-
 export interface WebhookEventLog {
   id: number;
   uuid: string;

@@ -4,7 +4,7 @@ import { ApiService } from '../api/api.service';
 import StatusBadge from '../components/StatusBadge';
 import { useWebSockets } from '../hooks/useWebSockets';
 import { Icons } from '../assets/Icons';
-import { WebhookEventStatus } from '../types/api.types';
+import { WebhookEventStatus } from '../constants/status';
 import type { WebhookEventLog, EventType, LogFilterState } from '../types/api.types';
 
 export default function EventLog() {

@@ -1,3 +1,5 @@
+import type { LogFilterState } from '../types/api.types';
+
 export const ENDPOINTS = {
   AUTH: {
     REGISTER: { url: '/auth/register', method: 'POST' },
@@ -9,7 +11,7 @@ export const ENDPOINTS = {
     GET: (id: string | number) => ({ url: `/event-types/${id}`, method: 'GET' }),
   },
   EVENTS: {
-    LIST: (filters: any) => {
+    LIST: (filters: LogFilterState) => {
       const { page, limit, status, eventTypeId, search, sortField, sortOrder } = filters;
       let url = `/events?page=${page}&limit=${limit}`;
       if (status) url += `&status=${status}`;
