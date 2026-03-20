@@ -23,22 +23,22 @@ services:
 
   backend:
     build:
-      context: ./source_code/spenza-backend
+      context: ./spenza-backend
       dockerfile: Dockerfile.dev
     container_name: spenza_backend
     environment:
       - NODE_ENV=development
       - DB_HOST=host.docker.internal
-      - DB_USERNAME=spenza_user
-      - DB_PASSWORD=spenza_pass
-      - DB_DATABASE=spenza_webhooks
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=admin123
+      - DB_DATABASE=postgres
       - RABBITMQ_URL=amqp://spenza_user:spenza_pass@rabbitmq:5672
     env_file:
-      - ./source_code/spenza-backend/.env
+      - ./spenza-backend/.env
     ports:
       - "3001:3001"
     volumes:
-      - ./source_code/spenza-backend:/app
+      - ./spenza-backend:/app
       - /app/node_modules
     depends_on:
       rabbitmq:
@@ -49,13 +49,13 @@ services:
 
   frontend:
     build:
-      context: ./source_code/spenza-frontend
+      context: ./spenza-frontend
       dockerfile: Dockerfile.dev
     container_name: spenza_frontend
     ports:
       - "5173:5173"
     volumes:
-      - ./source_code/spenza-frontend:/app
+      - ./spenza-frontend:/app
       - /app/node_modules
     networks:
       - spenza_network
