@@ -1,16 +1,19 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ApiService } from '../api/api.service';
 import StatCard from '../components/StatCard';
 import StatusBadge from '../components/StatusBadge';
 import { Link } from 'react-router-dom';
 import { Icons } from '../assets/Icons';
+import { useWebSockets } from '../hooks/useWebSockets';
 
 export default function Dashboard() {
+  const queryClient = useQueryClient();
+
   const { data: eventsData, isLoading: eventsLoading } = useQuery({
     queryKey: ['recent-events'],
     queryFn: async () => {
       const res = await ApiService.getEvents(1, 5);
-      return res.data.data; // Now directly returns { data: logs[], total, ... }
+      return res.data.data;
     },
   });
 
@@ -18,8 +21,14 @@ export default function Dashboard() {
     queryKey: ['subscriptions'],
     queryFn: async () => {
       const res = await ApiService.getSubscriptions();
-      return res.data.data; // Now directly returns array
+      return res.data.data;
     },
+  });
+
+  // Enable live updates for the Dashboard
+  useWebSockets(() => {
+    queryClient.invalidateQueries({ queryKey: ['recent-events'] });
+    queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
   });
 
   if (eventsLoading || subsLoading) {
