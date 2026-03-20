@@ -55,8 +55,8 @@ Webhook delivery is inherently unreliable (target servers go down). We implement
 - **AES-256 Encryption**: Callback credentials (passwords/tokens) are encrypted at rest in our PostgreSQL database using the `CRYPTO_SECRET`.
 - **JWT Authentication**: All user-facing management routes are protected by JSON Web Tokens.
 
-### 4. Real-Time Observability (SSE)
-Instead of polling the database, the frontend uses **Server-Sent Events (SSE)**. The delivery worker "broadcasts" the result of every delivery attempt, allowing the dashboard to update instantly.
+### 4. Real-Time Observability (WebSockets)
+Instead of polling the database or using basic SSE, the frontend uses **authenticated WebSockets (Socket.io)**. The delivery worker "broadcasts" the result of every delivery attempt to private user rooms, allowing the dashboard to update instantly and securely.
 
 ## 🛠️ Technology Stack
 - **Backend**: Node.js, Express, TypeScript, TypeORM, PostgreSQL.
