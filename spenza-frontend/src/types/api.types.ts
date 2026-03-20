@@ -59,6 +59,16 @@ export interface TestUrlResult {
 }
 
 // Webhook Logs
+export const WebhookEventStatus = {
+  PENDING: 'pending',
+  PROCESSING: 'processing',
+  DELIVERED: 'delivered',
+  FAILED: 'failed',
+  RETRYING: 'retrying',
+} as const;
+
+export type WebhookEventStatus = (typeof WebhookEventStatus)[keyof typeof WebhookEventStatus];
+
 export interface WebhookEventLog {
   id: number;
   uuid: string;
@@ -66,7 +76,7 @@ export interface WebhookEventLog {
   eventId: number;
   mappingId: number | null;
   payload: any;
-  status: 'pending' | 'processing' | 'delivered' | 'failed' | 'retrying';
+  status: WebhookEventStatus;
   correlationId: string | null;
   attemptNumber: number;
   responseCode: number | null;
@@ -82,7 +92,7 @@ export interface WebhookEventLog {
 export interface LogFilterState {
   page: number;
   limit: number;
-  status: string;
+  status: WebhookEventStatus | '';
   eventTypeId?: number;
   search: string;
   sortField: string;

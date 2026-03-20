@@ -12,7 +12,14 @@ export default function Dashboard() {
   const { data: eventsData, isLoading: eventsLoading } = useQuery({
     queryKey: ['recent-events'],
     queryFn: async () => {
-      const res = await ApiService.getEvents(1, 5);
+      const res = await ApiService.getEvents({
+        page: 1,
+        limit: 5,
+        status: '',
+        search: '',
+        sortField: 'createdOn',
+        sortOrder: 'DESC'
+      });
       return res.data.data;
     },
   });

@@ -4,6 +4,7 @@ import { ApiService } from '../api/api.service';
 import StatusBadge from '../components/StatusBadge';
 import { useWebSockets } from '../hooks/useWebSockets';
 import { Icons } from '../assets/Icons';
+import { WebhookEventStatus } from '../types/api.types';
 import type { WebhookEventLog, EventType, LogFilterState } from '../types/api.types';
 
 export default function EventLog() {
@@ -128,15 +129,15 @@ export default function EventLog() {
 
           <select
             value={tempFilters.status}
-            onChange={(e) => setTempFilters({ ...tempFilters, status: e.target.value })}
-            className="block w-full px-3 py-2.5 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all bg-slate-50/50 font-medium"
+            onChange={(e) => setTempFilters({ ...tempFilters, status: e.target.value as WebhookEventStatus | '' })}
+            className="block w-full px-3 py-2.5 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all bg-slate-50/50 font-medium capitalize"
           >
             <option value="">All Statuses</option>
-            <option value="pending">Pending</option>
-            <option value="processing">Processing</option>
-            <option value="delivered">Delivered</option>
-            <option value="failed">Failed</option>
-            <option value="retrying">Retrying</option>
+            {Object.values(WebhookEventStatus).map((status) => (
+              <option key={status} value={status}>
+                {status}
+              </option>
+            ))}
           </select>
 
           <select
