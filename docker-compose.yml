@@ -1,26 +1,6 @@
 version: '3.9'
 
 services:
-  postgres:
-    image: postgres:16-alpine
-    container_name: spenza_postgres
-    environment:
-      POSTGRES_USER: spenza_user
-      POSTGRES_PASSWORD: spenza_pass
-      POSTGRES_DB: spenza_webhooks
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./init-scripts:/docker-entrypoint-initdb.d
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U spenza_user -d spenza_webhooks"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - spenza_network
-
   rabbitmq:
     image: rabbitmq:3.13-management-alpine
     container_name: spenza_rabbitmq
@@ -48,7 +28,7 @@ services:
     container_name: spenza_backend
     environment:
       - NODE_ENV=development
-      - DB_HOST=postgres
+      - DB_HOST=host.docker.internal
       - DB_USERNAME=spenza_user
       - DB_PASSWORD=spenza_pass
       - DB_DATABASE=spenza_webhooks
@@ -61,8 +41,6 @@ services:
       - ./source_code/spenza-backend:/app
       - /app/node_modules
     depends_on:
-      postgres:
-        condition: service_healthy
       rabbitmq:
         condition: service_healthy
     networks:

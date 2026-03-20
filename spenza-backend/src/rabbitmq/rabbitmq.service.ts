@@ -1,16 +1,16 @@
-import amqp from 'amqplib';
+import { connect, Connection, Channel, ChannelModel } from 'amqplib';
 import { logger } from '../utils/logger';
 import { config } from '../config';
 import { getCurrentDate, formatDate } from '../utils/date';
 
-let connection: any;
-let channel: any;
+let connection: ChannelModel;
+let channel: Channel;
 
 const { exchange, queue, retryQueue, retryDelay, url } = config.rabbitmq;
 
 export const connectRabbitMQ = async (attempt = 1): Promise<void> => {
   try {
-    connection = await amqp.connect(url);
+    connection = await connect(url);
     channel = await connection.createChannel();
 
     // Listen for connection close
@@ -49,7 +49,7 @@ export const connectRabbitMQ = async (attempt = 1): Promise<void> => {
   }
 };
 
-export const getChannel = (): any => {
+export const getChannel = (): Channel => {
   if (!channel) throw new Error('RabbitMQ channel not initialized');
   return channel;
 };

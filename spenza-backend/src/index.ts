@@ -1,5 +1,6 @@
 import 'reflect-metadata';
 import express from 'express';
+import { createServer } from 'http';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
@@ -7,8 +8,10 @@ import dotenv from 'dotenv';
 import { initializeDatabase } from './database/data-source';
 import { connectRabbitMQ } from './rabbitmq/rabbitmq.service';
 import { startDeliveryWorker } from './workers/delivery.worker';
-import { responseMiddleware } from './middleware/response.middleware';
+import { requestIdMiddleware } from './middleware/request-id.middleware';
 import { logger } from './utils/logger';
+import { ResponseHandler } from './utils/response-handler';
+import { initSocket } from './modules/events/socket.service';
 
 // Routers
 import authRouter from './modules/auth/auth.router';
@@ -20,10 +23,14 @@ import eventsRouter from './modules/events/events.router';
 dotenv.config();
 
 const app = express();
+const httpServer = createServer(app);
 const PORT = process.env.PORT || 3001;
 
-// Response format middleware
-app.use(responseMiddleware);
+// Initialize WebSockets
+initSocket(httpServer);
+
+// Request ID middleware
+app.use(requestIdMiddleware);
 
 // Security middleware
 app.use(helmet());
@@ -53,7 +60,7 @@ app.use((req, res, next) => {
   };
 
   if (check(req.body) || check(req.query) || check(req.params)) {
-    return res.sendError('Potential XSS detected in request', 'Bad Request', 400);
+    return ResponseHandler.error(res, 'Potential XSS detected in request', 'Bad Request', 400);
   }
   next();
 });
@@ -67,23 +74,23 @@ app.use('/api/events', eventsRouter);
 
 // Health Check
 app.get('/health', (req, res) => {
-  res.sendResponse({ status: 'OK' }, 'System is healthy');
+  ResponseHandler.success(res, { status: 'OK' }, 'System is healthy');
 });
 
 // 404 handler
 app.use((_req, res) => {
-  res.sendError('Route not found', 'Not Found', 404);
+  ResponseHandler.error(res, 'Route not found', 'Not Found', 404);
 });
 
 // Global error handler
 app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
-  logger.error('[Global Error Handler]', err);
+  logger.error('[Global Error Handler]', { error: err, requestID: _req.requestID });
   const code = err.status || 500;
-  res.sendError(err.message || 'Internal server error', 'Error', code);
+  ResponseHandler.error(res, err.message || 'Internal server error', 'Error', code);
 });
 
 // Initialization
-const start = async () => {
+const startServer = async () => {
   try {
     // 1. Connect to Database
     await initializeDatabase();
@@ -94,8 +101,8 @@ const start = async () => {
     // 3. Start Delivery Worker
     await startDeliveryWorker();
 
-    // 4. Start Express Server
-    app.listen(PORT, () => {
+    // 4. Start HTTP & WebSocket Server
+    httpServer.listen(PORT, () => {
       logger.info(`[Server] Running on http://localhost:${PORT}`);
     });
   } catch (err) {
@@ -104,4 +111,4 @@ const start = async () => {
   }
 };
 
-start();
+startServer();

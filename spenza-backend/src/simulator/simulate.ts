@@ -44,7 +44,7 @@ const simulate = async () => {
         payload,
         { headers }
       );
-      console.log(`✅ [${i + 1}/${samplePayloads.length}] ${payload.event} → ${res.status} (logId: ${res.data.data[0].logId})`);
+      console.log(`✅ [${i + 1}/${samplePayloads.length}] ${payload.event} → ${res.status} (logId: ${res.data.data.logId})`);
     } catch (err: unknown) {
       const message = err instanceof Error ? (err as any).response?.data?.message || err.message : 'Unknown error';
       console.error(`❌ [${i + 1}/${samplePayloads.length}] ${payload.event} → ${message}`);

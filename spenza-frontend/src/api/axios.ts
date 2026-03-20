@@ -23,26 +23,28 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
+    // Handle 401 errors and prevent infinite loops with _retry flag
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
-      const { refreshToken, login, logout } = useAuthStore.getState();
+      const { refreshToken, setAccessToken, logout } = useAuthStore.getState();
       
       if (refreshToken) {
         try {
           const res = await ApiService.refresh(refreshToken);
 
-          if (res.data.code === 200) {
-            const newAccessToken = res.data.data[0].accessToken;
-            const user = useAuthStore.getState().user;
+          // Backend returns standardized ApiResponse structure: { code, message, data: { accessToken } }
+          if (res.data.code === 200 && res.data.data.accessToken) {
+            const newAccessToken = res.data.data.accessToken;
             
-            if (user) {
-              login(newAccessToken, refreshToken, user);
-            }
+            // Update the global Zustand state (Redux equivalent)
+            setAccessToken(newAccessToken);
             
+            // Update the failed request header and retry
             originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
             return axios(originalRequest);
           }
         } catch (refreshError: unknown) {
+          // If refresh fails, clear auth state and redirect to login
           logout();
           window.location.href = '/login';
           return Promise.reject(refreshError);

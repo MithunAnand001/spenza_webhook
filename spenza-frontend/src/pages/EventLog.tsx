@@ -1,41 +1,60 @@
 import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import api from '../api/axios';
+import { ApiService } from '../api/api.service';
 import StatusBadge from '../components/StatusBadge';
-import { useSSE } from '../hooks/useSSE';
+import { useWebSockets } from '../hooks/useWebSockets';
 import { Icons } from '../assets/Icons';
 
 export default function EventLog() {
   const queryClient = useQueryClient();
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [page, setPage] = useState(1);
+  const [status, setStatus] = useState<string>('');
+  const [eventTypeId, setEventTypeId] = useState<number | undefined>(undefined);
+  const [search, setSearch] = useState<string>('');
+  const [sortField, setSortField] = useState<string>('createdOn');
+  const [sortOrder, setSortOrder] = useState<string>('DESC');
   const limit = 20;
 
-  const { data, isLoading, isFetching } = useQuery({
-    queryKey: ['events', page],
+  const { data: eventTypes } = useQuery({
+    queryKey: ['event-types'],
     queryFn: async () => {
-      const res = await api.get(`/events?page=${page}&limit=${limit}`);
-      return res.data.data[0];
+      const res = await ApiService.getEventTypes();
+      return res.data.data;
     },
   });
 
-  useSSE(() => {
+  const { data, isLoading, isFetching } = useQuery({
+    queryKey: ['events', page, status, eventTypeId, search, sortField, sortOrder],
+    queryFn: async () => {
+      const res = await ApiService.getEvents(page, limit, status, eventTypeId, search, sortField, sortOrder);
+      return res.data.data;
+    },
+  });
+
+  useWebSockets(() => {
     if (page === 1) {
-      queryClient.invalidateQueries({ queryKey: ['events', 1] });
+      queryClient.invalidateQueries({ queryKey: ['events'] });
     }
     queryClient.invalidateQueries({ queryKey: ['recent-events'] });
   });
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-      </div>
-    );
-  }
+  const toggleSort = (field: string) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === 'ASC' ? 'DESC' : 'ASC');
+    } else {
+      setSortField(field);
+      setSortOrder('DESC');
+    }
+  };
 
-  const logs = data?.data || [];
-  const totalPages = data?.totalPages || 1;
+  const logs = (data as any)?.data || [];
+  const totalPages = (data as any)?.totalPages || 1;
+
+  const SortIcon = ({ field }: { field: string }) => {
+    if (sortField !== field) return <span className="ml-1 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity">↕</span>;
+    return <span className="ml-1 text-indigo-600">{sortOrder === 'ASC' ? '↑' : '↓'}</span>;
+  };
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -46,7 +65,7 @@ export default function EventLog() {
         </div>
         <div className="mt-4 flex md:mt-0 md:ml-4 space-x-2">
           <button
-            onClick={() => queryClient.invalidateQueries({ queryKey: ['events', page] })}
+            onClick={() => queryClient.invalidateQueries({ queryKey: ['events'] })}
             className={`inline-flex items-center px-4 py-2 border border-slate-300 rounded-lg shadow-sm text-sm font-bold text-slate-700 bg-white hover:bg-slate-50 focus:ring-2 focus:ring-indigo-500 transition-all ${isFetching ? 'opacity-50 cursor-not-allowed' : ''}`}
             disabled={isFetching}
           >
@@ -56,21 +75,94 @@ export default function EventLog() {
         </div>
       </header>
 
+      {/* Filters & Search */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+            {Icons.Activity()}
+          </div>
+          <input
+            type="text"
+            placeholder="Search Correlation ID..."
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            className="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+          />
+        </div>
+
+        <select
+          value={status}
+          onChange={(e) => { setStatus(e.target.value); setPage(1); }}
+          className="block w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+        >
+          <option value="">All Statuses</option>
+          <option value="pending">Pending</option>
+          <option value="processing">Processing</option>
+          <option value="delivered">Delivered</option>
+          <option value="failed">Failed</option>
+          <option value="retrying">Retrying</option>
+        </select>
+
+        <select
+          value={eventTypeId || ''}
+          onChange={(e) => { setEventTypeId(e.target.value ? parseInt(e.target.value) : undefined); setPage(1); }}
+          className="block w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+        >
+          <option value="">All Event Types</option>
+          {eventTypes?.map((type: any) => (
+            <option key={type.id} value={type.id}>{type.name}</option>
+          ))}
+        </select>
+
+        <button
+          onClick={() => { setStatus(''); setEventTypeId(undefined); setSearch(''); setPage(1); }}
+          className="text-sm font-bold text-indigo-600 hover:text-indigo-800 transition-colors"
+        >
+          Clear Filters
+        </button>
+      </div>
+
       <div className="bg-white border border-slate-200 shadow-sm rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-slate-200">
             <thead className="bg-slate-50/50">
               <tr>
-                <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest w-10">ID</th>
-                <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Type</th>
-                <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Status</th>
-                <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Code</th>
-                <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Timestamp</th>
+                <th 
+                  onClick={() => toggleSort('id')}
+                  className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest w-10 cursor-pointer group hover:bg-slate-100 transition-colors"
+                >
+                  <div className="flex items-center">ID <SortIcon field="id" /></div>
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Type</th>
+                <th 
+                  onClick={() => toggleSort('status')}
+                  className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest cursor-pointer group hover:bg-slate-100 transition-colors"
+                >
+                  <div className="flex items-center">Status <SortIcon field="status" /></div>
+                </th>
+                <th 
+                  onClick={() => toggleSort('responseCode')}
+                  className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest cursor-pointer group hover:bg-slate-100 transition-colors"
+                >
+                  <div className="flex items-center">Code <SortIcon field="responseCode" /></div>
+                </th>
+                <th 
+                  onClick={() => toggleSort('createdOn')}
+                  className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest cursor-pointer group hover:bg-slate-100 transition-colors"
+                >
+                  <div className="flex items-center">Timestamp <SortIcon field="createdOn" /></div>
+                </th>
                 <th scope="col" className="relative px-6 py-4"><span className="sr-only">Actions</span></th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-slate-100">
-              {logs.map((log: any) => (
+              {isLoading ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-20 text-center">
+                    <div className="flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div></div>
+                  </td>
+                </tr>
+              ) : logs.map((log: any) => (
                 <React.Fragment key={log.id}>
                   <tr className={`hover:bg-slate-50/50 transition-colors ${expandedId === log.id ? 'bg-indigo-50/30' : ''}`}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-mono font-medium text-slate-600">#{log.id}</td>
@@ -142,10 +234,10 @@ export default function EventLog() {
                   )}
                 </React.Fragment>
               ))}
-              {logs.length === 0 && (
+              {!isLoading && logs.length === 0 && (
                 <tr>
                   <td colSpan={6} className="px-6 py-20 text-center text-slate-400 font-medium italic">
-                    No events captured yet. Use the simulator to send some!
+                    No events matched your search/filters.
                   </td>
                 </tr>
               )}

@@ -6,6 +6,7 @@ import {
 } from '../../types/interfaces';
 import { CreateSubscriptionDto } from './subscriptions.dto';
 import { logger } from '../../utils/logger';
+import { CryptoUtil } from '../../utils/crypto';
 
 export class SubscriptionsService implements ISubscriptionsService {
   constructor(
@@ -28,14 +29,30 @@ export class SubscriptionsService implements ISubscriptionsService {
     });
 
     let config = await this.configRepo.findByUserId(userId);
+    
+    // Process credentials if they exist in the DTO (assuming DTO might have them now or in future)
+    const authData: any = {
+      authenticationType: dto.authenticationType ?? 'none',
+    };
+
+    if ((dto as any).callbackUsername) authData.callbackUsername = (dto as any).callbackUsername;
+    if ((dto as any).callbackPassword) authData.callbackPassword = CryptoUtil.encrypt((dto as any).callbackPassword);
+    if ((dto as any).callbackBearerToken) authData.callbackBearerToken = CryptoUtil.encrypt((dto as any).callbackBearerToken);
+
     if (!config) {
       const signingSecret = crypto.randomBytes(32).toString('hex');
       config = await this.configRepo.save({
         userId,
-        authenticationType: (dto.authenticationType as any) ?? 'none',
+        ...authData,
         signingSecret,
         createdBy: userId,
       });
+    } else {
+      // Update auth type if it changed
+      if (dto.authenticationType) {
+        config.authenticationType = dto.authenticationType as any;
+        await this.configRepo.save(config);
+      }
     }
 
     logger.info(`Subscription created for user ${userId}, subscription ID ${mapping.id}`);

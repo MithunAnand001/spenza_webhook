@@ -11,6 +11,8 @@
     "migration:generate": "pnpm typeorm migration:generate -d src/database/data-source.ts",
     "migration:run": "pnpm typeorm migration:run -d src/database/data-source.ts",
     "migration:revert": "pnpm typeorm migration:revert -d src/database/data-source.ts",
+    "seed": "ts-node -r tsconfig-paths/register src/database/seeds/event-types.seed.ts",
+    "dev:init": "pnpm migration:run && pnpm seed && pnpm dev",
     "test": "jest --coverage"
   },
   "keywords": [],
@@ -30,6 +32,7 @@
     "morgan": "^1.10.1",
     "pg": "^8.20.0",
     "reflect-metadata": "^0.2.2",
+    "socket.io": "^4.8.3",
     "typeorm": "^0.3.28",
     "uuid": "^13.0.0",
     "winston": "^3.19.0",

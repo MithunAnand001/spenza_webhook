@@ -9,7 +9,15 @@ export const ENDPOINTS = {
     GET: (id: string | number) => ({ url: `/event-types/${id}`, method: 'GET' }),
   },
   EVENTS: {
-    LIST: (page = 1, limit = 20) => ({ url: `/events?page=${page}&limit=${limit}`, method: 'GET' }),
+    LIST: (page = 1, limit = 20, status?: string, eventTypeId?: number, search?: string, sortField?: string, sortOrder?: string) => {
+      let url = `/events?page=${page}&limit=${limit}`;
+      if (status) url += `&status=${status}`;
+      if (eventTypeId) url += `&eventTypeId=${eventTypeId}`;
+      if (search) url += `&search=${encodeURIComponent(search)}`;
+      if (sortField) url += `&sortField=${sortField}`;
+      if (sortOrder) url += `&sortOrder=${sortOrder}`;
+      return { url, method: 'GET' };
+    },
     GET: (id: string | number) => ({ url: `/events/${id}`, method: 'GET' }),
     STREAM: (token: string) => ({ url: `/events/stream?token=${token}`, method: 'GET' }),
   },

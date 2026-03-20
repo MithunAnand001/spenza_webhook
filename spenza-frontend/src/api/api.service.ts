@@ -70,8 +70,16 @@ export const ApiService = {
   },
 
   // Events
-  getEvents: <T = any>(page: number, limit: number): Promise<AxiosResponse<ApiResponse<T>>> => {
-    const { url, method } = ENDPOINTS.EVENTS.LIST(page, limit);
+  getEvents: <T = any>(
+    page: number, 
+    limit: number, 
+    status?: string, 
+    eventTypeId?: number, 
+    search?: string, 
+    sortField?: string, 
+    sortOrder?: string
+  ): Promise<AxiosResponse<ApiResponse<T>>> => {
+    const { url, method } = ENDPOINTS.EVENTS.LIST(page, limit, status, eventTypeId, search, sortField, sortOrder);
     return api.request({ url, method });
   },
 

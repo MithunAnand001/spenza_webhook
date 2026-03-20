@@ -8,6 +8,14 @@ import { RegisterDto, LoginDto } from '../modules/auth/auth.dto';
 import { LoginResult } from './auth.types';
 import { CreateSubscriptionDto } from '../modules/subscriptions/subscriptions.dto';
 
+// Utils
+export interface ILogger {
+  info(message: string, meta?: any): void;
+  error(message: string, meta?: any): void;
+  warn(message: string, meta?: any): void;
+  debug(message: string, meta?: any): void;
+}
+
 // Repositories
 export interface IUserRepository {
   findByEmail(email: string): Promise<User | null>;

@@ -4,17 +4,17 @@ import { UserConfigurationRepository } from '../repositories/UserConfigurationRe
 import { UserEventMappingRepository } from '../repositories/UserEventMappingRepository';
 import { EventLogStatus } from '../modules/events/webhook-event-log.entity';
 import { getChannel } from '../rabbitmq/rabbitmq.service';
-import { broadcastEvent } from '../modules/events/sse.service';
+import { broadcastToUser } from '../modules/events/socket.service';
 import { logger } from '../utils/logger';
 import { config } from '../config';
 import { getCurrentDate, addMs } from '../utils/date';
+import { CryptoUtil } from '../utils/crypto';
 
 const MAX_RETRIES = config.rabbitmq.maxRetries;
 const BASE_DELAY_MS = config.rabbitmq.retryDelay;
 
 interface QueueMessage {
   eventLogId: number;
-  attemptNumber: number;
   correlationId?: string;
   publishedAt: string;
 }
@@ -38,9 +38,15 @@ export const startDeliveryWorker = async (): Promise<void> => {
       return;
     }
 
-    const { eventLogId, attemptNumber, correlationId } = message;
+    // Get retry count from RabbitMQ headers (x-death)
+    // This is much more reliable for DLX patterns
+    const deathHeader = msg.properties.headers['x-death'];
+    const retryCount = deathHeader ? deathHeader[0].count : 0;
+    const currentAttempt = retryCount + 1;
+
+    const { eventLogId, correlationId } = message;
     const requestID = correlationId || `wrk-${eventLogId}`;
-    const logCtx = { requestID, methodName: 'deliveryWorker' };
+    const logCtx = { requestID, methodName: 'deliveryWorker', attempt: currentAttempt };
 
     const logRepo = new WebhookLogRepository();
     const configRepo = new UserConfigurationRepository();
@@ -55,7 +61,7 @@ export const startDeliveryWorker = async (): Promise<void> => {
       }
 
       log.status = EventLogStatus.PROCESSING;
-      log.attemptNumber = attemptNumber + 1;
+      log.attemptNumber = currentAttempt;
       await logRepo.save(log);
 
       const mapping = await mappingRepo.findById(log.mappingId!);
@@ -78,9 +84,11 @@ export const startDeliveryWorker = async (): Promise<void> => {
 
       if (configData) {
         if (configData.authenticationType === 'bearer' && configData.callbackBearerToken) {
-          headers['Authorization'] = `Bearer ${configData.callbackBearerToken}`;
+          const decryptedToken = CryptoUtil.decrypt(configData.callbackBearerToken);
+          headers['Authorization'] = `Bearer ${decryptedToken}`;
         } else if (configData.authenticationType === 'basic' && configData.callbackUsername && configData.callbackPassword) {
-          const encoded = Buffer.from(`${configData.callbackUsername}:${configData.callbackPassword}`).toString('base64');
+          const decryptedPassword = CryptoUtil.decrypt(configData.callbackPassword);
+          const encoded = Buffer.from(`${configData.callbackUsername}:${decryptedPassword}`).toString('base64');
           headers['Authorization'] = `Basic ${encoded}`;
         }
       }
@@ -89,7 +97,7 @@ export const startDeliveryWorker = async (): Promise<void> => {
       const response = await axios.post(mapping.callbackUrl, log.payload, {
         headers,
         timeout: 10000,
-        validateStatus: (status) => status < 500,
+        validateStatus: (status) => status >= 200 && status < 300,
       });
 
       log.status = EventLogStatus.DELIVERED;
@@ -97,7 +105,7 @@ export const startDeliveryWorker = async (): Promise<void> => {
       log.responseBody = JSON.stringify(response.data).substring(0, 1000);
       log.deliveredAt = getCurrentDate();
 
-      broadcastEvent(log.userId, {
+      broadcastToUser(log.userId, 'webhook_event', {
         logId: log.id,
         status: log.status,
         eventType: mapping.eventType?.name,
@@ -113,7 +121,6 @@ export const startDeliveryWorker = async (): Promise<void> => {
       const errMsg = err instanceof Error ? err.message : 'Unknown error';
       logger.error(`Delivery error: ${errMsg}`, { ...logCtx, stack: err instanceof Error ? err.stack : undefined });
 
-      const currentAttempt = attemptNumber + 1;
       const log = await logRepo.findById(eventLogId);
       
       if (log) {
@@ -121,6 +128,17 @@ export const startDeliveryWorker = async (): Promise<void> => {
           log.status = EventLogStatus.FAILED;
           log.responseBody = `Max retries (${MAX_RETRIES}) exceeded. Last error: ${errMsg}`;
           await logRepo.save(log);
+          
+          const mapping = await mappingRepo.findById(log.mappingId!);
+          broadcastToUser(log.userId, 'webhook_event', {
+            logId: log.id,
+            status: log.status,
+            eventType: mapping?.eventType?.name,
+            deliveredAt: null,
+            responseCode: (err as any).response?.status || 0,
+          });
+
+          logger.error(`[Worker] Max retries reached for eventLogId=${eventLogId}. Closing.`, logCtx);
           channel.ack(msg);
         } else {
           const delay = BASE_DELAY_MS * Math.pow(2, currentAttempt);
@@ -128,7 +146,17 @@ export const startDeliveryWorker = async (): Promise<void> => {
           log.nextRetryAt = addMs(getCurrentDate(), delay);
           log.responseBody = `Attempt ${currentAttempt} failed: ${errMsg}`;
           await logRepo.save(log);
-          logger.warn(`[Worker] Retry ${currentAttempt}/${MAX_RETRIES} for eventLogId=${eventLogId} in ${delay}ms`);
+          
+          const mapping = await mappingRepo.findById(log.mappingId!);
+          broadcastToUser(log.userId, 'webhook_event', {
+            logId: log.id,
+            status: log.status,
+            eventType: mapping?.eventType?.name,
+            deliveredAt: null,
+            responseCode: (err as any).response?.status || 0,
+          });
+
+          logger.warn(`[Worker] Attempt ${currentAttempt}/${MAX_RETRIES} failed. Scheduling retry.`, logCtx);
           channel.nack(msg, false, false);
         }
       } else {

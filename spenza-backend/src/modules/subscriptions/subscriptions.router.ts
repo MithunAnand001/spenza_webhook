@@ -2,16 +2,17 @@ import { Router } from 'express';
 import { SubscriptionController } from '../../controllers/SubscriptionController';
 import { SubscriptionsService } from './subscriptions.service';
 import { UserEventMappingRepository } from '../../repositories/UserEventMappingRepository';
-import { UserConfigurationRepository } from '../../repositories/UserConfigurationRepository';
+import { EventTypeRepository } from '../../repositories/EventTypeRepository';
 import { authMiddleware } from '../../middleware/auth.middleware';
+import { UserConfigurationRepository } from '../../repositories/UserConfigurationRepository';
+import { logger } from '../../utils/logger';
 
 const router = Router();
 
-// Dependency Injection
 const mappingRepo = new UserEventMappingRepository();
 const configRepo = new UserConfigurationRepository();
 const service = new SubscriptionsService(mappingRepo, configRepo);
-const controller = new SubscriptionController(service);
+const controller = new SubscriptionController(service, logger);
 
 router.post('/test-url', authMiddleware, controller.testUrl);
 router.post('/', authMiddleware, controller.create);

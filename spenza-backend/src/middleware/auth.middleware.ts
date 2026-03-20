@@ -3,21 +3,18 @@ import jwt from 'jsonwebtoken';
 import { config } from '../config';
 import { SpenzaErrorCode } from '../constants/ErrorCodes';
 import { UserRepository } from '../repositories/UserRepository';
+import { ResponseHandler } from '../utils/response-handler';
 
-export interface UserPayload {
+const userRepo = new UserRepository();
+
+interface JwtPayload {
   sub: number;
   uuid: string;
   email: string;
 }
 
-export interface AuthRequest extends Request {
-  user?: UserPayload;
-}
-
-const userRepo = new UserRepository();
-
 export const authMiddleware = async (
-  req: AuthRequest,
+  req: Request,
   res: Response,
   next: NextFunction
 ) => {
@@ -31,26 +28,26 @@ export const authMiddleware = async (
   }
 
   if (!token) {
-    return res.sendError('Unauthorized: No token provided', 'Unauthorized', 401, SpenzaErrorCode.UNAUTHORIZED);
+    return ResponseHandler.error(res, 'Unauthorized: No token provided', 'Unauthorized', 401, SpenzaErrorCode.UNAUTHORIZED);
   }
 
   try {
-    const decoded = jwt.verify(token, config.jwt.secret) as any;
+    const decoded = jwt.verify(token, config.jwt.secret) as unknown as JwtPayload;
     
     // Verify user existence in DB
     const user = await userRepo.findById(decoded.sub);
     if (!user || !user.isActive) {
-      return res.sendError('User not found or inactive', 'Unauthorized', 401, SpenzaErrorCode.UNAUTHORIZED);
+      return ResponseHandler.error(res, 'User not found or inactive', 'Unauthorized', 401, SpenzaErrorCode.UNAUTHORIZED);
     }
 
-    const userStruct: UserPayload = {
+    req.user = {
       sub: Number(decoded.sub),
       uuid: String(decoded.uuid),
       email: String(decoded.email),
     };
-    req.user = userStruct;
+    
     next();
   } catch (err: unknown) {
-    return res.sendError('Unauthorized: Invalid or expired token', 'Unauthorized', 401, SpenzaErrorCode.UNAUTHORIZED);
+    return ResponseHandler.error(res, 'Unauthorized: Invalid or expired token', 'Unauthorized', 401, SpenzaErrorCode.UNAUTHORIZED);
   }
 };
