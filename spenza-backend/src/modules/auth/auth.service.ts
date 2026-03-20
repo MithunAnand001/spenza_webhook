@@ -1,5 +1,6 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import { v4 as uuidv4 } from 'uuid';
 import { User } from './user.entity';
 import { RegisterDto, LoginDto } from './auth.dto';
 import { config } from '../../config';
@@ -36,15 +37,27 @@ export class AuthService implements IAuthService {
   }
 
   private generateTokens(user: User) {
-    // Use UUID as the 'sub' claim instead of internal ID
-    const payload = { sub: user.uuid, email: user.emailId };
+    const accessPayload = {
+      sub: user.uuid,
+      type: 'access',
+    };
 
-    const accessToken = jwt.sign(payload, config.jwt.secret, {
+    const refreshPayload = {
+      sub: user.uuid,
+      type: 'refresh',
+      jti: uuidv4(),
+    };
+
+    const accessToken = jwt.sign(accessPayload, config.jwt.secret, {
       expiresIn: config.jwt.expiresIn as any,
+      issuer: 'spenza-auth-service',
+      audience: 'spenza-app',
     });
 
-    const refreshToken = jwt.sign(payload, config.jwt.refreshSecret, {
+    const refreshToken = jwt.sign(refreshPayload, config.jwt.refreshSecret, {
       expiresIn: config.jwt.refreshExpiresIn as any,
+      issuer: 'spenza-auth-service',
+      audience: 'spenza-app',
     });
 
     return {

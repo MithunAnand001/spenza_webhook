@@ -8,8 +8,10 @@ import { ResponseHandler } from '../utils/response-handler';
 const userRepo = new UserRepository();
 
 interface JwtPayload {
-  sub: string; // This is now user.uuid
-  email: string;
+  sub: string;
+  type: string;
+  iss: string;
+  aud: string;
 }
 
 export const authMiddleware = async (
@@ -31,8 +33,16 @@ export const authMiddleware = async (
   }
 
   try {
-    const decoded = jwt.verify(token, config.jwt.secret) as unknown as JwtPayload;
+    const decoded = jwt.verify(token, config.jwt.secret, {
+      issuer: 'spenza-auth-service',
+      audience: 'spenza-app',
+    }) as unknown as JwtPayload;
     
+    // Ensure this is an access token, not a refresh token
+    if (decoded.type !== 'access') {
+      throw new Error('Invalid token type');
+    }
+
     // Verify user existence in DB using UUID
     const user = await userRepo.findByUuid(decoded.sub);
     if (!user || !user.isActive) {

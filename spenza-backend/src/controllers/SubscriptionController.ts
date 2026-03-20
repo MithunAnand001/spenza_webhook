@@ -5,6 +5,11 @@ import { CreateSubscriptionSchema } from '../modules/subscriptions/subscriptions
 import { SpenzaErrorCode } from '../constants/ErrorCodes';
 import { formatDate, DateFormat } from '../utils/date';
 import { ResponseHandler } from '../utils/response-handler';
+import { z } from 'zod';
+
+const TestUrlSchema = z.object({
+  url: z.string().url(),
+});
 
 export class SubscriptionController {
   constructor(
@@ -17,10 +22,12 @@ export class SubscriptionController {
   }
 
   testUrl = async (req: Request, res: Response) => {
-    const { url } = req.body;
-    if (!url || typeof url !== 'string') {
-      return ResponseHandler.error(res, 'Invalid URL', 'Bad Request', 400, SpenzaErrorCode.BAD_REQUEST);
+    const validation = TestUrlSchema.safeParse(req.body);
+    if (!validation.success) {
+      return ResponseHandler.error(res, 'Invalid URL format', 'Bad Request', 400, SpenzaErrorCode.BAD_REQUEST);
     }
+
+    const { url } = validation.data;
 
     try {
       this.logger.info(`Testing URL: ${url}`, { methodName: 'testUrl', requestID: req.requestID });
@@ -79,9 +86,12 @@ export class SubscriptionController {
 
   get = async (req: Request, res: Response) => {
     try {
-      const subUuid = req.params.uuid as string;
+      const subUuid = req.params.uuid;
+      if (!z.string().uuid().safeParse(subUuid).success) {
+        return ResponseHandler.error(res, 'Invalid UUID format', 'Bad Request', 400, SpenzaErrorCode.BAD_REQUEST);
+      }
       this.logger.info(`Getting subscription ${subUuid} for user ${req.user!.id}`, { methodName: 'get', requestID: req.requestID });
-      const sub = await this.service.getSubscription(req.user!.id, subUuid);
+      const sub = await this.service.getSubscription(req.user!.id, subUuid as string);
       return ResponseHandler.success(res, {
         ...sub,
         createdOn: formatDate(sub.createdOn, DateFormat.DISPLAY),
@@ -95,9 +105,12 @@ export class SubscriptionController {
 
   cancel = async (req: Request, res: Response) => {
     try {
-      const subUuid = req.params.uuid as string;
+      const subUuid = req.params.uuid;
+      if (!z.string().uuid().safeParse(subUuid).success) {
+        return ResponseHandler.error(res, 'Invalid UUID format', 'Bad Request', 400, SpenzaErrorCode.BAD_REQUEST);
+      }
       this.logger.info(`Cancelling subscription ${subUuid} for user ${req.user!.id}`, { methodName: 'cancel', requestID: req.requestID });
-      const sub = await this.service.cancelSubscription(req.user!.id, subUuid);
+      const sub = await this.service.cancelSubscription(req.user!.id, subUuid as string);
       return ResponseHandler.success(res, {
         ...sub,
         createdOn: formatDate(sub.createdOn, DateFormat.DISPLAY),

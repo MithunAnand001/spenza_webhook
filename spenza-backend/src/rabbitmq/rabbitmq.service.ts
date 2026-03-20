@@ -1,27 +1,37 @@
-import { connect, Connection, Channel } from 'amqplib';
+import * as amqplib from 'amqplib';
 import { logger } from '../utils/logger';
 import { config } from '../config';
 import { getCurrentDate, formatDate } from '../utils/date';
 
-let connection: Connection;
-let channel: Channel;
+let connection: amqplib.ChannelModel | undefined;
+let channel: amqplib.Channel | undefined;
+let reconnectTimer: ReturnType<typeof setTimeout> | undefined;
 
 const { exchange, queue, retryQueue, retryDelay, url } = config.rabbitmq;
 
+const scheduleReconnect = (attempt: number): void => {
+  if (reconnectTimer) clearTimeout(reconnectTimer);
+  reconnectTimer = setTimeout(() => connectRabbitMQ(attempt), 5000);
+};
+
 export const connectRabbitMQ = async (attempt = 1): Promise<void> => {
   try {
-    connection = await connect(url);
-    channel = await connection.createChannel();
+    const conn = await amqplib.connect(url);
+    const ch = await conn.createChannel();
 
-    // Listen for connection close
-    connection.on('close', () => {
+    connection = conn;
+    channel = ch;
+
+    conn.once('close', () => {
       logger.error('[RabbitMQ] Connection closed, attempting to reconnect...');
-      setTimeout(() => connectRabbitMQ(), 5000);
+      connection = undefined;
+      channel = undefined;
+      scheduleReconnect(1);
     });
 
-    await channel.assertExchange(exchange, 'direct', { durable: true });
+    await ch.assertExchange(exchange, 'direct', { durable: true });
 
-    await channel.assertQueue(queue, {
+    await ch.assertQueue(queue, {
       durable: true,
       arguments: {
         'x-dead-letter-exchange': exchange,
@@ -29,7 +39,7 @@ export const connectRabbitMQ = async (attempt = 1): Promise<void> => {
       },
     });
 
-    await channel.assertQueue(retryQueue, {
+    await ch.assertQueue(retryQueue, {
       durable: true,
       arguments: {
         'x-dead-letter-exchange': exchange,
@@ -38,38 +48,50 @@ export const connectRabbitMQ = async (attempt = 1): Promise<void> => {
       },
     });
 
-    await channel.bindQueue(queue, exchange, queue);
-    await channel.bindQueue(retryQueue, exchange, retryQueue);
+    await ch.bindQueue(queue, exchange, queue);
+    await ch.bindQueue(retryQueue, exchange, retryQueue);
 
     logger.info('[RabbitMQ] Connected and queues declared');
   } catch (err) {
+    connection = undefined;
+    channel = undefined;
     logger.error(`[RabbitMQ] Connection attempt ${attempt} failed:`, err);
-    // Retry indefinitely every 5 seconds
-    setTimeout(() => connectRabbitMQ(attempt + 1), 5000);
+    scheduleReconnect(attempt + 1);
   }
 };
 
-export const getChannel = (): Channel => {
+export const getChannel = (): amqplib.Channel => {
   if (!channel) throw new Error('RabbitMQ channel not initialized');
   return channel;
 };
 
-export const publishWebhookEvent = (eventLogId: number, userUuid: string, attemptNumber = 0, correlationId?: string): void => {
+export const publishWebhookEvent = (
+  eventLogId: number,
+  userUuid: string,
+  attemptNumber = 0,
+  correlationId?: string,
+): boolean => {
   try {
     const ch = getChannel();
-    const message = JSON.stringify({ 
-      eventLogId, 
+    const message = JSON.stringify({
+      eventLogId,
       userUuid,
-      attemptNumber, 
+      attemptNumber,
       correlationId,
-      publishedAt: formatDate(getCurrentDate()) 
+      publishedAt: formatDate(getCurrentDate()),
     });
-    ch.publish(exchange, queue, Buffer.from(message), {
+    const published = ch.publish(exchange, queue, Buffer.from(message), {
       persistent: true,
       contentType: 'application/json',
     });
-    logger.info(`[RabbitMQ] Published eventLogId=${eventLogId} for user ${userUuid}`, { correlationId });
+    if (!published) {
+      logger.warn(`[RabbitMQ] Publish buffer full for eventLogId=${eventLogId}`, { correlationId });
+    } else {
+      logger.info(`[RabbitMQ] Published eventLogId=${eventLogId} for user ${userUuid}`, { correlationId });     
+    }
+    return published;
   } catch (err) {
     logger.error(`[RabbitMQ] Failed to publish eventLogId=${eventLogId}:`, err);
+    return false;
   }
 };

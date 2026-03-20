@@ -8,6 +8,17 @@ import { SpenzaErrorCode } from '../constants/ErrorCodes';
 import { formatDate, DateFormat } from '../utils/date';
 import { ILike } from 'typeorm';
 import { ResponseHandler } from '../utils/response-handler';
+import { z } from 'zod';
+
+const ListEventsSchema = z.object({
+  page: z.string().optional().transform(v => parseInt(v || '1')),
+  limit: z.string().optional().transform(v => parseInt(v || '20')),
+  status: z.string().optional(),
+  eventTypeUuid: z.string().uuid().optional(),
+  search: z.string().optional(),
+  sortField: z.string().optional().default('createdOn'),
+  sortOrder: z.enum(['ASC', 'DESC']).optional().default('DESC'),
+});
 
 export class EventController {
   constructor(
@@ -43,6 +54,9 @@ export class EventController {
   getEventType = async (req: Request, res: Response) => {
     try {
       const uuid = req.params.uuid as string;
+      if (!z.string().uuid().safeParse(uuid).success) {
+        return ResponseHandler.error(res, 'Invalid UUID format', 'Bad Request', 400, SpenzaErrorCode.BAD_REQUEST);
+      }
       this.log(req, 'getEventType', `Fetching event type ${uuid}`);
       const type = await this.eventTypeRepo.findByUuid(uuid);
       if (!type) {
@@ -62,18 +76,16 @@ export class EventController {
   };
 
   listEvents = async (req: Request, res: Response) => {
-    try {
-      const page = parseInt(req.query.page as string) || 1;
-      const limit = parseInt(req.query.limit as string) || 20;
-      const status = req.query.status as string;
-      const eventTypeUuid = req.query.eventTypeUuid as string;
-      const search = req.query.search as string;
-      const sortField = (req.query.sortField as string) || 'createdOn';
-      const sortOrder = (req.query.sortOrder as string) || 'DESC';
+    const validation = ListEventsSchema.safeParse(req.query);
+    if (!validation.success) {
+      return ResponseHandler.error(res, 'Invalid query parameters', 'Bad Request', 400, SpenzaErrorCode.BAD_REQUEST);
+    }
 
+    const { page, limit, status, eventTypeUuid, search, sortField, sortOrder } = validation.data;
+
+    try {
       const validSortFields = ['createdOn', 'status', 'responseCode', 'uuid'];
       const field = validSortFields.includes(sortField) ? sortField : 'createdOn';
-      const order = ['ASC', 'DESC'].includes(sortOrder.toUpperCase()) ? sortOrder.toUpperCase() : 'DESC';
 
       this.log(req, 'listEvents', `Fetching events for user ${req.user!.id}, page ${page}, search: ${search}`);
 
@@ -92,7 +104,7 @@ export class EventController {
       const [logs, total] = await this.logRepo.findAndCount({
         where,
         relations: ['event', 'event.eventType'],
-        order: { [field]: order },
+        order: { [field]: sortOrder },
         skip: (page - 1) * limit,
         take: limit,
       });
@@ -133,8 +145,11 @@ export class EventController {
   getEventLog = async (req: Request, res: Response) => {
     try {
       const uuid = req.params.uuid as string;
+      if (!z.string().uuid().safeParse(uuid).success) {
+        return ResponseHandler.error(res, 'Invalid UUID format', 'Bad Request', 400, SpenzaErrorCode.BAD_REQUEST);
+      }
       this.log(req, 'getEventLog', `Fetching log ${uuid} for user ${req.user!.id}`);
-      const log = await this.logRepo.findByUuidAndUser(uuid, req.user!.id);
+      const log = await this.logRepo.findByUuidAndUser(uuid as string, req.user!.id);
       if (!log) {
         return ResponseHandler.error(res, 'Event log not found', 'Not Found', 404, SpenzaErrorCode.NOT_FOUND);
       }
