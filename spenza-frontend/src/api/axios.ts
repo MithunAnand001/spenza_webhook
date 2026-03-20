@@ -36,13 +36,14 @@ api.interceptors.response.use(
           if (res.data.code === 200 && res.data.data.accessToken) {
             const newAccessToken = res.data.data.accessToken;
             
-            // Update the global Zustand state (Redux equivalent)
+            // Update the global Zustand state
             setAccessToken(newAccessToken);
             
             // Update the failed request header and retry
             originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
             return axios(originalRequest);
           }
+          throw new Error('Invalid refresh response');
         } catch (refreshError: unknown) {
           // If refresh fails, clear auth state and redirect to login
           logout();

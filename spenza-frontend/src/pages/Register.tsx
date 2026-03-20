@@ -4,7 +4,6 @@ import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { ApiService } from '../api/api.service';
 import { useAuthStore } from '../store/auth.store';
-import type { LoginResult } from '../types/auth.types';
 
 export default function Register() {
   const [formData, setFormData] = useState({
@@ -25,11 +24,16 @@ export default function Register() {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await ApiService.register<LoginResult>(formData);
-      const { accessToken, refreshToken, user } = res.data.data;
-      login(accessToken, refreshToken, user);
-      toast.success(res.data.message || 'Account created successfully!');
-      navigate('/');
+      const res = await ApiService.register(formData);
+      
+      if (res.data.code === 201 && res.data.data) {
+        const { accessToken, refreshToken, user } = res.data.data;
+        login(accessToken, refreshToken, user);
+        toast.success(res.data.message || 'Account created successfully!');
+        navigate('/');
+      } else {
+        throw new Error(res.data.message || 'Registration failed');
+      }
     } catch (err: unknown) {
       const message = err instanceof Error ? (err as any).response?.data?.errors?.[0]?.message : 'Registration failed';
       toast.error(message || 'Registration failed');

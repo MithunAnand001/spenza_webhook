@@ -20,7 +20,7 @@ export default function NewSubscription() {
     if (!url || !url.startsWith('http')) return;
     setUrlStatus('testing');
     try {
-      const res = await ApiService.testUrl<any>(url);
+      const res = await ApiService.testUrl(url);
       setUrlStatus(res.data.data.success ? 'success' : 'failed');
     } catch {
       setUrlStatus('failed');
@@ -30,14 +30,14 @@ export default function NewSubscription() {
   const { data: eventTypes, isLoading } = useQuery({
     queryKey: ['event-types'],
     queryFn: async () => {
-      const res = await ApiService.getEventTypes<any[]>();
+      const res = await ApiService.getEventTypes();
       return res.data.data;
     },
   });
 
   const mutation = useMutation({
     mutationFn: async (data: any) => {
-      const res = await ApiService.createSubscription<any>({
+      const res = await ApiService.createSubscription({
         ...data,
         eventTypeId: parseInt(data.eventTypeId),
       });

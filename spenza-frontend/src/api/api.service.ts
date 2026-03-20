@@ -1,6 +1,19 @@
 import api from './axios';
 import { ENDPOINTS } from '../constants/endpoints';
 import type { AxiosResponse } from 'axios';
+import type { LoginResult } from '../types/auth.types';
+import type {
+  LoginDto,
+  RegisterDto,
+  RefreshResult,
+  EventType,
+  UserEventMapping,
+  CreateSubscriptionDto,
+  CreateSubscriptionResult,
+  TestUrlResult,
+  WebhookEventLog,
+  PaginatedResponse
+} from '../types/api.types';
 
 export interface ApiError {
   message: string;
@@ -18,59 +31,59 @@ export interface ApiResponse<T> {
 }
 
 /**
- * ApiService: Structured with generics to ensure type safety without 'any'.
+ * ApiService: Strongly typed to ensure strict data passing.
  */
 export const ApiService = {
   // Auth
-  register: <T = any>(payload: unknown): Promise<AxiosResponse<ApiResponse<T>>> => {
+  register: (payload: RegisterDto): Promise<AxiosResponse<ApiResponse<LoginResult>>> => {
     const { url, method } = ENDPOINTS.AUTH.REGISTER;
     return api.request({ url, method, data: payload });
   },
   
-  login: <T = any>(payload: unknown): Promise<AxiosResponse<ApiResponse<T>>> => {
+  login: (payload: LoginDto): Promise<AxiosResponse<ApiResponse<LoginResult>>> => {
     const { url, method } = ENDPOINTS.AUTH.LOGIN;
     return api.request({ url, method, data: payload });
   },
 
-  refresh: <T = any>(refreshToken: string): Promise<AxiosResponse<ApiResponse<T>>> => {
+  refresh: (refreshToken: string): Promise<AxiosResponse<ApiResponse<RefreshResult>>> => {
     const { url, method } = ENDPOINTS.AUTH.REFRESH;
     return api.request({ url, method, data: { refreshToken } });
   },
 
   // Event Types
-  getEventTypes: <T = any>(): Promise<AxiosResponse<ApiResponse<T>>> => {
+  getEventTypes: (): Promise<AxiosResponse<ApiResponse<EventType[]>>> => {
     const { url, method } = ENDPOINTS.EVENT_TYPES.LIST;
     return api.request({ url, method });
   },
 
   // Subscriptions
-  getSubscriptions: <T = any>(): Promise<AxiosResponse<ApiResponse<T>>> => {
+  getSubscriptions: (): Promise<AxiosResponse<ApiResponse<UserEventMapping[]>>> => {
     const { url, method } = ENDPOINTS.SUBSCRIPTIONS.LIST;
     return api.request({ url, method });
   },
 
-  getSubscription: <T = any>(id: string | number): Promise<AxiosResponse<ApiResponse<T>>> => {
-    const config = ENDPOINTS.SUBSCRIPTIONS.GET(id) as any;
+  getSubscription: (id: string | number): Promise<AxiosResponse<ApiResponse<UserEventMapping>>> => {
+    const config = ENDPOINTS.SUBSCRIPTIONS.GET(id);
     return api.request({ url: config.url, method: config.method });
   },
 
-  createSubscription: <T = any>(payload: unknown): Promise<AxiosResponse<ApiResponse<T>>> => {
+  createSubscription: (payload: CreateSubscriptionDto): Promise<AxiosResponse<ApiResponse<CreateSubscriptionResult>>> => {
     const { url, method } = ENDPOINTS.SUBSCRIPTIONS.CREATE;
     return api.request({ url, method, data: payload });
   },
 
-  cancelSubscription: <T = any>(id: string | number): Promise<AxiosResponse<ApiResponse<T>>> => {
-    const config = ENDPOINTS.SUBSCRIPTIONS.CANCEL(id) as any;
+  cancelSubscription: (id: string | number): Promise<AxiosResponse<ApiResponse<UserEventMapping>>> => {
+    const config = ENDPOINTS.SUBSCRIPTIONS.CANCEL(id);
     return api.request({ url: config.url, method: config.method });
   },
 
-  testUrl: <T = any>(urlToTest: string): Promise<AxiosResponse<ApiResponse<T>>> => {
+  testUrl: (urlToTest: string): Promise<AxiosResponse<ApiResponse<TestUrlResult>>> => {
     const { url, method } = ENDPOINTS.SUBSCRIPTIONS.TEST_URL;
     return api.request({ url, method, data: { url: urlToTest } });
   },
 
   // Events
-  getEvents: <T = any>(
+  getEvents: (
     page: number, 
     limit: number, 
     status?: string, 
@@ -78,13 +91,13 @@ export const ApiService = {
     search?: string, 
     sortField?: string, 
     sortOrder?: string
-  ): Promise<AxiosResponse<ApiResponse<T>>> => {
+  ): Promise<AxiosResponse<ApiResponse<PaginatedResponse<WebhookEventLog>>>> => {
     const { url, method } = ENDPOINTS.EVENTS.LIST(page, limit, status, eventTypeId, search, sortField, sortOrder);
     return api.request({ url, method });
   },
 
-  getEventLog: <T = any>(id: string | number): Promise<AxiosResponse<ApiResponse<T>>> => {
-    const config = ENDPOINTS.EVENTS.GET(id) as any;
+  getEventLog: (id: string | number): Promise<AxiosResponse<ApiResponse<WebhookEventLog>>> => {
+    const config = ENDPOINTS.EVENTS.GET(id);
     return api.request({ url: config.url, method: config.method });
   }
 };

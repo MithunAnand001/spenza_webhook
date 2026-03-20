@@ -4,7 +4,6 @@ import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { ApiService } from '../api/api.service';
 import { useAuthStore } from '../store/auth.store';
-import type { LoginResult } from '../types/auth.types';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -17,11 +16,16 @@ export default function Login() {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await ApiService.login<LoginResult>({ email, password });
-      const { accessToken, refreshToken, user } = res.data.data;
-      login(accessToken, refreshToken, user);
-      toast.success(res.data.message || 'Welcome back!');
-      navigate('/');
+      const res = await ApiService.login({ email, password });
+      
+      if (res.data.code === 200 && res.data.data) {
+        const { accessToken, refreshToken, user } = res.data.data;
+        login(accessToken, refreshToken, user);
+        toast.success(res.data.message || 'Welcome back!');
+        navigate('/');
+      } else {
+        throw new Error(res.data.message || 'Login failed');
+      }
     } catch (err: unknown) {
       const message = err instanceof Error ? (err as any).response?.data?.errors?.[0]?.message : 'Login failed';
       toast.error(message || 'Login failed');

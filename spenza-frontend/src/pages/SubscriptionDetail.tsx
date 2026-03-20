@@ -11,7 +11,7 @@ export default function SubscriptionDetail() {
     queryKey: ['subscription', id],
     queryFn: async () => {
       const res = await ApiService.getSubscription(id!);
-      return res.data.data[0];
+      return res.data.data;
     },
   });
 

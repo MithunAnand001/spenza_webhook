@@ -14,7 +14,7 @@ export default function Subscriptions() {
   const { data: subs, isLoading } = useQuery({
     queryKey: ['subscriptions'],
     queryFn: async () => {
-      const res = await ApiService.getSubscriptions<any[]>();
+      const res = await ApiService.getSubscriptions();
       return res.data.data;
     },
   });
