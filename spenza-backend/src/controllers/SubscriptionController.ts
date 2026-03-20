@@ -12,6 +12,10 @@ export class SubscriptionController {
     private logger: ILogger
   ) {}
 
+  private log(req: Request, methodName: string, message: string, level: string = 'info', meta: any = {}) {
+    (this.logger as any)[level](message, { methodName, requestID: req.requestID, ...meta });
+  }
+
   testUrl = async (req: Request, res: Response) => {
     const { url } = req.body;
     if (!url || typeof url !== 'string') {
@@ -40,8 +44,8 @@ export class SubscriptionController {
       return ResponseHandler.error(res, errors, 'Validation Failed', 400);
     }
     try {
-      this.logger.info(`Creating subscription for user ${req.user!.sub}`, { methodName: 'create', requestID: req.requestID });
-      const result = await this.service.createSubscription(req.user!.sub, parsed.data);
+      this.logger.info(`Creating subscription for user ${req.user!.id}`, { methodName: 'create', requestID: req.requestID });
+      const result = await this.service.createSubscription(req.user!.id, parsed.data);
       const formattedResult = {
         ...result,
         subscription: {
@@ -59,8 +63,8 @@ export class SubscriptionController {
 
   list = async (req: Request, res: Response) => {
     try {
-      this.logger.info(`Listing subscriptions for user ${req.user!.sub}`, { methodName: 'list', requestID: req.requestID });
-      const subs = await this.service.listSubscriptions(req.user!.sub);
+      this.logger.info(`Listing subscriptions for user ${req.user!.id}`, { methodName: 'list', requestID: req.requestID });
+      const subs = await this.service.listSubscriptions(req.user!.id);
       const formattedSubs = subs.map(sub => ({
         ...sub,
         createdOn: formatDate(sub.createdOn, DateFormat.DISPLAY),
@@ -75,9 +79,9 @@ export class SubscriptionController {
 
   get = async (req: Request, res: Response) => {
     try {
-      const subId = parseInt(req.params.id as string);
-      this.logger.info(`Getting subscription ${subId} for user ${req.user!.sub}`, { methodName: 'get', requestID: req.requestID });
-      const sub = await this.service.getSubscription(req.user!.sub, subId);
+      const subUuid = req.params.uuid as string;
+      this.logger.info(`Getting subscription ${subUuid} for user ${req.user!.id}`, { methodName: 'get', requestID: req.requestID });
+      const sub = await this.service.getSubscription(req.user!.id, subUuid);
       return ResponseHandler.success(res, {
         ...sub,
         createdOn: formatDate(sub.createdOn, DateFormat.DISPLAY),
@@ -91,9 +95,9 @@ export class SubscriptionController {
 
   cancel = async (req: Request, res: Response) => {
     try {
-      const subId = parseInt(req.params.id as string);
-      this.logger.info(`Cancelling subscription ${subId} for user ${req.user!.sub}`, { methodName: 'cancel', requestID: req.requestID });
-      const sub = await this.service.cancelSubscription(req.user!.sub, subId);
+      const subUuid = req.params.uuid as string;
+      this.logger.info(`Cancelling subscription ${subUuid} for user ${req.user!.id}`, { methodName: 'cancel', requestID: req.requestID });
+      const sub = await this.service.cancelSubscription(req.user!.id, subUuid);
       return ResponseHandler.success(res, {
         ...sub,
         createdOn: formatDate(sub.createdOn, DateFormat.DISPLAY),

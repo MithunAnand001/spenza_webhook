@@ -5,13 +5,14 @@ import { toast } from 'react-hot-toast';
 import { ApiService } from '../api/api.service';
 import { Icons } from '../assets/Icons';
 import Modal from '../components/Modal';
+import type { EventType } from '../types/api.types';
 
 export default function NewSubscription() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    eventTypeId: '',
+    eventTypeUuid: '',
     callbackUrl: '',
-    authenticationType: 'none',
+    authenticationType: 'none' as const,
   });
   const [urlStatus, setUrlStatus] = useState<'idle' | 'testing' | 'success' | 'failed'>('idle');
   const [signingSecret, setSigningSecret] = useState<string | null>(null);
@@ -36,11 +37,8 @@ export default function NewSubscription() {
   });
 
   const mutation = useMutation({
-    mutationFn: async (data: any) => {
-      const res = await ApiService.createSubscription({
-        ...data,
-        eventTypeId: parseInt(data.eventTypeId),
-      });
+    mutationFn: async (data: typeof formData) => {
+      const res = await ApiService.createSubscription(data);
       return res.data.data;
     },
     onSuccess: (data) => {
@@ -59,7 +57,7 @@ export default function NewSubscription() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.eventTypeId || !formData.callbackUrl) {
+    if (!formData.eventTypeUuid || !formData.callbackUrl) {
       toast.error('Please fill all required fields');
       return;
     }
@@ -91,19 +89,19 @@ export default function NewSubscription() {
       <form onSubmit={handleSubmit} className="space-y-8 bg-white shadow-sm border border-slate-200 rounded-2xl p-8 lg:p-10">
         <div className="grid grid-cols-1 gap-y-8">
           <div className="space-y-2">
-            <label htmlFor="eventTypeId" className="block text-sm font-bold text-slate-700 uppercase tracking-wider">
+            <label htmlFor="eventTypeUuid" className="block text-sm font-bold text-slate-700 uppercase tracking-wider">
               Event Type <span className="text-rose-500">*</span>
             </label>
             <select
-              id="eventTypeId"
+              id="eventTypeUuid"
               required
               className="mt-1 block w-full py-3 px-4 border border-slate-300 bg-slate-50 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all sm:text-sm font-medium"
-              value={formData.eventTypeId}
-              onChange={(e) => setFormData({ ...formData, eventTypeId: e.target.value })}
+              value={formData.eventTypeUuid}
+              onChange={(e) => setFormData({ ...formData, eventTypeUuid: e.target.value })}
             >
               <option value="">Select the event you want to monitor</option>
-              {eventTypes?.map((t: any) => (
-                <option key={t.id} value={t.id}>{t.name} — {t.shortDescription}</option>
+              {eventTypes?.map((t: EventType) => (
+                <option key={t.uuid} value={t.uuid}>{t.name} — {t.shortDescription}</option>
               ))}
             </select>
           </div>
@@ -145,7 +143,7 @@ export default function NewSubscription() {
               id="authType"
               className="mt-1 block w-full py-3 px-4 border border-slate-300 bg-slate-50 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all sm:text-sm font-medium"
               value={formData.authenticationType}
-              onChange={(e) => setFormData({ ...formData, authenticationType: e.target.value })}
+              onChange={(e) => setFormData({ ...formData, authenticationType: e.target.value as any })}
             >
               <option value="none">No Authentication (Public)</option>
               <option value="hmac">HMAC SHA-256 Signing (Recommended)</option>

@@ -78,13 +78,15 @@ export class AuthController {
     try {
       const decoded = jwt.verify(refreshToken, config.jwt.refreshSecret) as any;
       const userRepo = new UserRepository();
-      const user = await userRepo.findById(decoded.sub);
+      // Use findByUuid since sub is now UUID
+      const user = await userRepo.findByUuid(decoded.sub);
 
       if (!user || !user.isActive) {
         throw new Error('Invalid refresh token');
       }
 
-      const payload = { sub: user.id, uuid: user.uuid, email: user.emailId };
+      // Use UUID as 'sub' in the new token
+      const payload = { sub: user.uuid, email: user.emailId };
       const accessToken = jwt.sign(payload, config.jwt.secret, {
         expiresIn: config.jwt.expiresIn as any,
       });

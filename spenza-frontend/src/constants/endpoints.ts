@@ -8,27 +8,26 @@ export const ENDPOINTS = {
   },
   EVENT_TYPES: {
     LIST: { url: '/event-types', method: 'GET' },
-    GET: (id: string | number) => ({ url: `/event-types/${id}`, method: 'GET' }),
+    GET: (uuid: string) => ({ url: `/event-types/${uuid}`, method: 'GET' }),
   },
   EVENTS: {
     LIST: (filters: LogFilterState) => {
-      const { page, limit, status, eventTypeId, search, sortField, sortOrder } = filters;
+      const { page, limit, status, eventTypeUuid, search, sortField, sortOrder } = filters;
       let url = `/events?page=${page}&limit=${limit}`;
       if (status) url += `&status=${status}`;
-      if (eventTypeId) url += `&eventTypeId=${eventTypeId}`;
+      if (eventTypeUuid) url += `&eventTypeUuid=${eventTypeUuid}`;
       if (search) url += `&search=${encodeURIComponent(search)}`;
       if (sortField) url += `&sortField=${sortField}`;
       if (sortOrder) url += `&sortOrder=${sortOrder}`;
       return { url, method: 'GET' };
     },
-    GET: (id: string | number) => ({ url: `/events/${id}`, method: 'GET' }),
-    STREAM: (token: string) => ({ url: `/events/stream?token=${token}`, method: 'GET' }),
+    GET: (uuid: string) => ({ url: `/events/${uuid}`, method: 'GET' }),
   },
   SUBSCRIPTIONS: {
     LIST: { url: '/subscriptions', method: 'GET' },
     CREATE: { url: '/subscriptions', method: 'POST' },
-    GET: (id: string | number) => ({ url: `/subscriptions/${id}`, method: 'GET' }),
-    CANCEL: (id: string | number) => ({ url: `/subscriptions/${id}/cancel`, method: 'PATCH' }),
+    GET: (uuid: string) => ({ url: `/subscriptions/${uuid}`, method: 'GET' }),
+    CANCEL: (uuid: string) => ({ url: `/subscriptions/${uuid}/cancel`, method: 'PATCH' }),
     TEST_URL: { url: '/subscriptions/test-url', method: 'POST' },
   },
 };

@@ -19,7 +19,6 @@ export interface RefreshResult {
 
 // Event Types
 export interface EventType {
-  id: number;
   uuid: string;
   name: string;
   shortDescription: string | null;
@@ -31,10 +30,7 @@ export interface EventType {
 
 // Subscriptions
 export interface UserEventMapping {
-  id: number;
   uuid: string;
-  userId: number;
-  eventTypeId: number;
   callbackUrl: string;
   createdOn: string;
   isActive: boolean;
@@ -42,7 +38,7 @@ export interface UserEventMapping {
 }
 
 export interface CreateSubscriptionDto {
-  eventTypeId: number;
+  eventTypeUuid: string;
   callbackUrl: string;
   authenticationType?: 'none' | 'basic' | 'bearer' | 'hmac';
   callbackUsername?: string;
@@ -62,11 +58,7 @@ export interface TestUrlResult {
 
 // Webhook Logs
 export interface WebhookEventLog {
-  id: number;
   uuid: string;
-  userId: number;
-  eventId: number;
-  mappingId: number | null;
   payload: any;
   status: WebhookEventStatus;
   correlationId: string | null;
@@ -85,7 +77,7 @@ export interface LogFilterState {
   page: number;
   limit: number;
   status: WebhookEventStatus | '';
-  eventTypeId?: number;
+  eventTypeUuid?: string;
   search: string;
   sortField: string;
   sortOrder: 'ASC' | 'DESC';

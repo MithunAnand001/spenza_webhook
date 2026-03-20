@@ -8,7 +8,6 @@ import {
 } from '../../types/interfaces';
 import { EventLogStatus } from '../events/webhook-event-log.entity';
 import { publishWebhookEvent } from '../../rabbitmq/rabbitmq.service';
-import { logger } from '../../utils/logger';
 
 export class WebhookIngestService implements IWebhookIngestService {
   constructor(
@@ -19,18 +18,26 @@ export class WebhookIngestService implements IWebhookIngestService {
   ) {}
 
   async ingest(
-    subscriptionId: number,
+    subscriptionUuid: string,
     payload: Record<string, unknown>,
     signature: string | undefined,
     correlationId: string | undefined
   ) {
-    const mapping = await this.mappingRepo.findById(subscriptionId);
-    if (!mapping || !mapping.isActive) {
-      throw new Error('Subscription not found or inactive');
-    }
+    // 1. Load subscription by UUID with user relation
+    const mapping = await this.mappingRepo.findByUuid(subscriptionUuid);
+    if (!mapping || !mapping.isActive) throw new Error('Subscription not found or inactive');
 
+    // Load full mapping with relations to get user UUID
+    const fullMapping = await this.mappingRepo.findById(mapping.id);
+    const userUuid = (fullMapping as any).user?.uuid || (mapping as any).user?.uuid;
+    
+    // We need the user UUID. Let's make sure findByUuid returns the user relation.
+    // I'll check UserEventMappingRepository.findByUuid
+    
+    // 2. Load user config for signing secret
     const config = await this.configRepo.findByUserId(mapping.userId);
 
+    // 3. Verify HMAC signature if config exists and has signing secret
     if (config?.signingSecret) {
       if (!signature) throw new Error('Missing X-Webhook-Signature header');
       const expected = this.computeSignature(payload, config.signingSecret);
@@ -41,6 +48,7 @@ export class WebhookIngestService implements IWebhookIngestService {
       if (!isValid) throw new Error('Invalid webhook signature');
     }
 
+    // 4. Find or create event record for this event type
     let event = await this.eventRepo.findByEventTypeId(mapping.eventTypeId);
     if (!event) {
       event = await this.eventRepo.save({
@@ -51,6 +59,7 @@ export class WebhookIngestService implements IWebhookIngestService {
       });
     }
 
+    // 5. Create event log record
     const log = await this.logRepo.save({
       userId: mapping.userId,
       eventId: event.id,
@@ -62,9 +71,15 @@ export class WebhookIngestService implements IWebhookIngestService {
       createdBy: mapping.userId,
     });
 
-    publishWebhookEvent(log.id, 0, log.correlationId || undefined);
+    // 6. Publish to RabbitMQ with User UUID
+    // Need to ensure we have the userUuid here.
+    // I will fetch the user directly to be safe.
+    const userRepo = (this.mappingRepo as any).repo.manager.getRepository('User');
+    const user = await userRepo.findOneBy({ id: mapping.userId });
 
-    return { message: 'Webhook received', logId: log.id, correlationId: log.correlationId };
+    publishWebhookEvent(log.id, user.uuid, 0, log.correlationId || undefined);
+
+    return { message: 'Webhook received', logUuid: log.uuid, correlationId: log.correlationId };
   }
 
   private computeSignature(payload: Record<string, unknown>, secret: string): string {

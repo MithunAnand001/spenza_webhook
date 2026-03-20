@@ -17,6 +17,20 @@ export class WebhookLogRepository implements IWebhookLogRepository {
     });
   }
 
+  async findByUuid(uuid: string): Promise<WebhookEventLog | null> {
+    return this.repo.findOne({
+      where: { uuid },
+      relations: ['mapping'],
+    });
+  }
+
+  async findByUuidAndUser(uuid: string, userId: number): Promise<WebhookEventLog | null> {
+    return this.repo.findOne({
+      where: { uuid, userId },
+      relations: ['mapping'],
+    });
+  }
+
   async findAndCount(options: any): Promise<[WebhookEventLog[], number]> {
     return this.repo.findAndCount(options);
   }

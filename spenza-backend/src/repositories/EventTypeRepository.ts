@@ -11,13 +11,14 @@ export class EventTypeRepository implements IEventTypeRepository {
   }
 
   async findAllActive(): Promise<EventType[]> {
-    return this.repo.find({
-      where: { isActive: true },
-      order: { name: 'ASC' },
-    });
+    return this.repo.find({ where: { isActive: true }, order: { name: 'ASC' } });
   }
 
   async findById(id: number): Promise<EventType | null> {
     return this.repo.findOneBy({ id });
+  }
+
+  async findByUuid(uuid: string): Promise<EventType | null> {
+    return this.repo.findOneBy({ uuid });
   }
 }

@@ -15,6 +15,7 @@ const BASE_DELAY_MS = config.rabbitmq.retryDelay;
 
 interface QueueMessage {
   eventLogId: number;
+  userUuid: string;
   correlationId?: string;
   publishedAt: string;
 }
@@ -39,12 +40,11 @@ export const startDeliveryWorker = async (): Promise<void> => {
     }
 
     // Get retry count from RabbitMQ headers (x-death)
-    // This is much more reliable for DLX patterns
     const deathHeader = msg.properties.headers['x-death'];
     const retryCount = deathHeader ? deathHeader[0].count : 0;
     const currentAttempt = retryCount + 1;
 
-    const { eventLogId, correlationId } = message;
+    const { eventLogId, userUuid, correlationId } = message;
     const requestID = correlationId || `wrk-${eventLogId}`;
     const logCtx = { requestID, methodName: 'deliveryWorker', attempt: currentAttempt };
 
@@ -105,8 +105,9 @@ export const startDeliveryWorker = async (): Promise<void> => {
       log.responseBody = JSON.stringify(response.data).substring(0, 1000);
       log.deliveredAt = getCurrentDate();
 
-      broadcastToUser(log.userId, 'webhook_event', {
-        logId: log.id,
+      // Emit via WebSocket using userUuid
+      broadcastToUser(userUuid, 'webhook_event', {
+        logUuid: log.uuid,
         status: log.status,
         eventType: mapping.eventType?.name,
         deliveredAt: log.deliveredAt,
@@ -130,8 +131,8 @@ export const startDeliveryWorker = async (): Promise<void> => {
           await logRepo.save(log);
           
           const mapping = await mappingRepo.findById(log.mappingId!);
-          broadcastToUser(log.userId, 'webhook_event', {
-            logId: log.id,
+          broadcastToUser(userUuid, 'webhook_event', {
+            logUuid: log.uuid,
             status: log.status,
             eventType: mapping?.eventType?.name,
             deliveredAt: null,
@@ -148,8 +149,8 @@ export const startDeliveryWorker = async (): Promise<void> => {
           await logRepo.save(log);
           
           const mapping = await mappingRepo.findById(log.mappingId!);
-          broadcastToUser(log.userId, 'webhook_event', {
-            logId: log.id,
+          broadcastToUser(userUuid, 'webhook_event', {
+            logUuid: log.uuid,
             status: log.status,
             eventType: mapping?.eventType?.name,
             deliveredAt: null,

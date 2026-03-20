@@ -31,11 +31,11 @@ The easiest way to run the entire system is using the provided `Makefile`.
 
 To test the end-to-end flow without a real external source, use the built-in simulator script:
 
-1.  **Obtain Credentials**: Create a subscription in the UI and copy the **Subscription ID** and **Signing Secret**.
+1.  **Obtain Credentials**: Create a subscription in the UI and copy the **Subscription UUID** and **Signing Secret**.
 2.  **Run the Simulator**:
     ```bash
     cd spenza-backend
-    $env:SUBSCRIPTION_ID="your_id"
+    $env:SUBSCRIPTION_UUID="your_uuid"
     $env:SIGNING_SECRET="your_secret"
     npx ts-node -r tsconfig-paths/register src/simulator/simulate.ts
     ```

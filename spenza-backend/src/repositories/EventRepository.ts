@@ -11,7 +11,11 @@ export class EventRepository implements IEventRepository {
   }
 
   async findByEventTypeId(eventTypeId: number): Promise<Event | null> {
-    return this.repo.findOneBy({ eventTypeId, isActive: true });
+    return this.repo.findOneBy({ eventTypeId });
+  }
+
+  async findByUuid(uuid: string): Promise<Event | null> {
+    return this.repo.findOneBy({ uuid });
   }
 
   async save(event: Partial<Event>): Promise<Event> {

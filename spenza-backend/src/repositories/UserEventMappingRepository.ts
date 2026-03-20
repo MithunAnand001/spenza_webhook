@@ -29,9 +29,23 @@ export class UserEventMappingRepository implements IUserEventMappingRepository {
     });
   }
 
+  async findByUuidAndUser(uuid: string, userId: number): Promise<UserEventMapping | null> {
+    return this.repo.findOne({
+      where: { uuid, userId },
+      relations: ['eventType'],
+    });
+  }
+
   async findById(id: number): Promise<UserEventMapping | null> {
     return this.repo.findOne({
       where: { id },
+      relations: ['eventType'],
+    });
+  }
+
+  async findByUuid(uuid: string): Promise<UserEventMapping | null> {
+    return this.repo.findOne({
+      where: { uuid },
       relations: ['eventType'],
     });
   }

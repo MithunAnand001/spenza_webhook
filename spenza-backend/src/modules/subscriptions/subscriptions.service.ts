@@ -2,7 +2,8 @@ import crypto from 'crypto';
 import { 
   IUserEventMappingRepository, 
   IUserConfigurationRepository, 
-  ISubscriptionsService 
+  ISubscriptionsService,
+  IEventTypeRepository 
 } from '../../types/interfaces';
 import { CreateSubscriptionDto } from './subscriptions.dto';
 import { logger } from '../../utils/logger';
@@ -11,26 +12,31 @@ import { CryptoUtil } from '../../utils/crypto';
 export class SubscriptionsService implements ISubscriptionsService {
   constructor(
     private mappingRepo: IUserEventMappingRepository,
-    private configRepo: IUserConfigurationRepository
+    private configRepo: IUserConfigurationRepository,
+    private eventTypeRepo: IEventTypeRepository
   ) {}
 
   async createSubscription(userId: number, dto: CreateSubscriptionDto) {
-    const existing = await this.mappingRepo.findActive(userId, dto.eventTypeId);
+    // Look up event type by UUID
+    const eventType = await this.eventTypeRepo.findByUuid(dto.eventTypeUuid);
+    if (!eventType) throw new Error('Event type not found');
+
+    const existing = await this.mappingRepo.findActive(userId, eventType.id);
     if (existing) {
-      logger.warn(`User ${userId} attempted duplicate subscription to event type ${dto.eventTypeId}`);
+      logger.warn(`User ${userId} attempted duplicate subscription to event type ${eventType.name}`);
       throw new Error('Already subscribed to this event type');
     }
 
     const mapping = await this.mappingRepo.save({
       userId,
-      eventTypeId: dto.eventTypeId,
+      eventTypeId: eventType.id,
       callbackUrl: dto.callbackUrl,
       createdBy: userId,
     });
 
     let config = await this.configRepo.findByUserId(userId);
     
-    // Process credentials if they exist in the DTO (assuming DTO might have them now or in future)
+    // Process credentials if they exist in the DTO
     const authData: any = {
       authenticationType: dto.authenticationType ?? 'none',
     };
@@ -57,32 +63,59 @@ export class SubscriptionsService implements ISubscriptionsService {
 
     logger.info(`Subscription created for user ${userId}, subscription ID ${mapping.id}`);
     return {
-      subscription: mapping,
+      subscription: {
+        uuid: mapping.uuid,
+        callbackUrl: mapping.callbackUrl,
+        isActive: mapping.isActive,
+        createdOn: mapping.createdOn,
+      },
       signingSecret: config.signingSecret,
     };
   }
 
   async listSubscriptions(userId: number) {
-    return this.mappingRepo.findByUserId(userId);
+    const mappings = await this.mappingRepo.findByUserId(userId);
+    // Remove internal ID before returning
+    return mappings.map(m => {
+      const { id, userId: uid, createdBy, modifiedBy, ...rest } = m as any;
+      if (rest.eventType) {
+        const { id: etid, createdBy: etcb, modifiedBy: etmb, ...etRest } = rest.eventType;
+        rest.eventType = etRest;
+      }
+      return rest;
+    });
   }
 
-  async getSubscription(userId: number, id: number) {
-    const sub = await this.mappingRepo.findByIdAndUser(id, userId);
+  async getSubscription(userId: number, uuid: string) {
+    const sub = await this.mappingRepo.findByUuidAndUser(uuid, userId);
     if (!sub) {
-      logger.warn(`Subscription ${id} not found for user ${userId}`);
+      logger.warn(`Subscription ${uuid} not found for user ${userId}`);
       throw new Error('Subscription not found');
     }
-    return sub;
+    // Remove internal ID
+    const { id, userId: uid, createdBy, modifiedBy, ...rest } = sub as any;
+    if (rest.eventType) {
+      const { id: etid, createdBy: etcb, modifiedBy: etmb, ...etRest } = rest.eventType;
+      rest.eventType = etRest;
+    }
+    return rest;
   }
 
-  async cancelSubscription(userId: number, id: number) {
-    const sub = await this.mappingRepo.findByIdAndUser(id, userId);
+  async cancelSubscription(userId: number, uuid: string) {
+    const sub = await this.mappingRepo.findByUuidAndUser(uuid, userId);
     if (!sub) {
-      logger.warn(`Attempted to cancel non-existent subscription ${id} for user ${userId}`);
+      logger.warn(`Attempted to cancel non-existent subscription ${uuid} for user ${userId}`);
       throw new Error('Subscription not found');
     }
     sub.isActive = false;
     sub.modifiedBy = userId;
-    return this.mappingRepo.save(sub);
+    const saved = await this.mappingRepo.save(sub);
+    // Remove internal ID
+    const { id, userId: uid, createdBy, modifiedBy, ...rest } = saved as any;
+    if (rest.eventType) {
+      const { id: etid, createdBy: etcb, modifiedBy: etmb, ...etRest } = rest.eventType;
+      rest.eventType = etRest;
+    }
+    return rest;
   }
 }

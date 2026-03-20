@@ -5,6 +5,7 @@ import StatusBadge from '../components/StatusBadge';
 import { Link } from 'react-router-dom';
 import { Icons } from '../assets/Icons';
 import { useWebSockets } from '../hooks/useWebSockets';
+import type { WebhookEventLog } from '../types/api.types';
 
 export default function Dashboard() {
   const queryClient = useQueryClient();
@@ -98,9 +99,11 @@ export default function Dashboard() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-slate-100">
-              {(eventsData as any)?.data?.map((event: any) => (
-                <tr key={event.id} className="hover:bg-slate-50/50 transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-mono font-medium text-slate-600">#{event.id}</td>
+              {(eventsData as any)?.data?.map((event: WebhookEventLog) => (
+                <tr key={event.uuid} className="hover:bg-slate-50/50 transition-colors">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-mono font-medium text-slate-600">
+                    <span className="truncate w-20 inline-block" title={event.uuid}>{event.uuid.split('-')[0]}...</span>
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-semibold text-slate-900">{event.event?.eventType?.name}</div>
                   </td>

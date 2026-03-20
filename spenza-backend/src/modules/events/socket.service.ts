@@ -23,7 +23,8 @@ export const initSocket = (server: HttpServer) => {
 
     try {
       const decoded = jwt.verify(token, config.jwt.secret) as any;
-      socket.data.userId = decoded.sub;
+      // sub is now the user.uuid (string)
+      socket.data.userUuid = decoded.sub;
       next();
     } catch (err) {
       next(new Error('Authentication error'));
@@ -31,18 +32,18 @@ export const initSocket = (server: HttpServer) => {
   });
 
   io.on('connection', (socket) => {
-    const userId = socket.data.userId;
-    const roomName = `user_${userId}`;
+    const userUuid = socket.data.userUuid;
+    const roomName = `user_${userUuid}`;
     
     // Join a private room for this user
     socket.join(roomName);
     
-    logger.info(`[Socket] User ${userId} connected and joined room ${roomName}`, { 
+    logger.info(`[Socket] User ${userUuid} connected and joined room ${roomName}`, { 
       socketId: socket.id 
     });
 
     socket.on('disconnect', () => {
-      logger.info(`[Socket] User ${userId} disconnected`);
+      logger.info(`[Socket] User ${userUuid} disconnected`);
     });
   });
 
@@ -56,8 +57,8 @@ export const getIO = () => {
   return io;
 };
 
-export const broadcastToUser = (userId: number, event: string, data: any) => {
+export const broadcastToUser = (userUuid: string, event: string, data: any) => {
   if (io) {
-    io.to(`user_${userId}`).emit(event, data);
+    io.to(`user_${userUuid}`).emit(event, data);
   }
 };

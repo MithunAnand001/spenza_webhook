@@ -3,11 +3,11 @@ import crypto from 'crypto';
 import { getCurrentDate, formatDate } from '../utils/date';
 
 const BASE_URL = process.env.API_URL || 'http://localhost:3001';
-const SUBSCRIPTION_ID = process.env.SUBSCRIPTION_ID;
+const SUBSCRIPTION_UUID = process.env.SUBSCRIPTION_UUID;
 const SIGNING_SECRET = process.env.SIGNING_SECRET;
 
-if (!SUBSCRIPTION_ID) {
-  console.error('Usage: SUBSCRIPTION_ID=1 SIGNING_SECRET=abc ts-node simulate.ts');
+if (!SUBSCRIPTION_UUID) {
+  console.error('Usage: SUBSCRIPTION_UUID=xxx-xxx SIGNING_SECRET=abc ts-node simulate.ts');
   process.exit(1);
 }
 
@@ -24,7 +24,7 @@ const computeSignature = (payload: Record<string, unknown>, secret: string): str
 };
 
 const simulate = async () => {
-  console.log(`\n🚀 Starting webhook simulation for subscription ${SUBSCRIPTION_ID}\n`);
+  console.log(`\n🚀 Starting webhook simulation for subscription ${SUBSCRIPTION_UUID}\n`);
 
   for (let i = 0; i < samplePayloads.length; i++) {
     const payload = { ...samplePayloads[i], timestamp: formatDate(getCurrentDate()), sequence: i + 1 };
@@ -40,11 +40,11 @@ const simulate = async () => {
 
     try {
       const res = await axios.post(
-        `${BASE_URL}/api/webhooks/ingest/${SUBSCRIPTION_ID}`,
+        `${BASE_URL}/api/webhooks/ingest/${SUBSCRIPTION_UUID}`,
         payload,
         { headers }
       );
-      console.log(`✅ [${i + 1}/${samplePayloads.length}] ${payload.event} → ${res.status} (logId: ${res.data.data.logId})`);
+      console.log(`✅ [${i + 1}/${samplePayloads.length}] ${payload.event} → ${res.status} (logUuid: ${res.data.data.logUuid})`);
     } catch (err: unknown) {
       const message = err instanceof Error ? (err as any).response?.data?.message || err.message : 'Unknown error';
       console.error(`❌ [${i + 1}/${samplePayloads.length}] ${payload.event} → ${message}`);

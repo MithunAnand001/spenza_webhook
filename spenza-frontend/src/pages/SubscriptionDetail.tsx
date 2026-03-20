@@ -5,12 +5,12 @@ import StatusBadge from '../components/StatusBadge';
 import { Icons } from '../assets/Icons';
 
 export default function SubscriptionDetail() {
-  const { id } = useParams();
+  const { id: uuid } = useParams();
   
   const { data: sub, isLoading: subLoading } = useQuery({
-    queryKey: ['subscription', id],
+    queryKey: ['subscription', uuid],
     queryFn: async () => {
-      const res = await ApiService.getSubscription(id!);
+      const res = await ApiService.getSubscription(uuid!);
       return res.data.data;
     },
   });
@@ -60,10 +60,6 @@ export default function SubscriptionDetail() {
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-xs font-bold text-slate-400 uppercase mb-1">Subscription ID</dt>
-                  <dd className="text-sm font-mono text-slate-900">#{sub.id}</dd>
-                </div>
-                <div>
                   <dt className="text-xs font-bold text-slate-400 uppercase mb-1">Created At</dt>
                   <dd className="text-sm text-slate-900 font-medium">{sub.createdOn}</dd>
                 </div>
@@ -89,7 +85,7 @@ export default function SubscriptionDetail() {
                 <p className="text-xs font-bold text-indigo-300 uppercase tracking-widest mb-2">Ingestion Endpoint</p>
                 <div className="bg-black/20 backdrop-blur-md rounded-xl p-4 border border-white/10 font-mono text-xs break-all leading-loose">
                   <span className="text-emerald-400 font-bold mr-2">POST</span>
-                  {import.meta.env.VITE_API_BASE_URL}/webhooks/ingest/{sub.id}
+                  {import.meta.env.VITE_API_BASE_URL}/webhooks/ingest/{sub.uuid}
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

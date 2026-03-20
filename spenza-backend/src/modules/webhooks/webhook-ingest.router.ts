@@ -17,6 +17,6 @@ const eventRepo = new EventRepository();
 const service = new WebhookIngestService(mappingRepo, configRepo, logRepo, eventRepo);
 const controller = new WebhookIngestController(service, logger);
 
-router.post('/ingest/:subscriptionId', controller.ingest);
+router.post('/ingest/:subscriptionUuid', controller.ingest);
 
 export default router;

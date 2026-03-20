@@ -18,6 +18,10 @@ export class UserRepository implements IUserRepository {
     return this.repo.findOneBy({ id });
   }
 
+  async findByUuid(uuid: string): Promise<User | null> {
+    return this.repo.findOneBy({ uuid });
+  }
+
   async save(user: Partial<User>): Promise<User> {
     return this.repo.save(this.repo.create(user));
   }

@@ -1,9 +1,9 @@
-import { connect, Connection, Channel, ChannelModel } from 'amqplib';
+import { connect, Connection, Channel } from 'amqplib';
 import { logger } from '../utils/logger';
 import { config } from '../config';
 import { getCurrentDate, formatDate } from '../utils/date';
 
-let connection: ChannelModel;
+let connection: Connection;
 let channel: Channel;
 
 const { exchange, queue, retryQueue, retryDelay, url } = config.rabbitmq;
@@ -54,11 +54,12 @@ export const getChannel = (): Channel => {
   return channel;
 };
 
-export const publishWebhookEvent = (eventLogId: number, attemptNumber = 0, correlationId?: string): void => {
+export const publishWebhookEvent = (eventLogId: number, userUuid: string, attemptNumber = 0, correlationId?: string): void => {
   try {
     const ch = getChannel();
     const message = JSON.stringify({ 
       eventLogId, 
+      userUuid,
       attemptNumber, 
       correlationId,
       publishedAt: formatDate(getCurrentDate()) 
@@ -67,7 +68,7 @@ export const publishWebhookEvent = (eventLogId: number, attemptNumber = 0, corre
       persistent: true,
       contentType: 'application/json',
     });
-    logger.info(`[RabbitMQ] Published eventLogId=${eventLogId}`, { correlationId });
+    logger.info(`[RabbitMQ] Published eventLogId=${eventLogId} for user ${userUuid}`, { correlationId });
   } catch (err) {
     logger.error(`[RabbitMQ] Failed to publish eventLogId=${eventLogId}:`, err);
   }

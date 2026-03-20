@@ -57,14 +57,19 @@ export const ApiService = {
     return api.request({ url, method });
   },
 
+  getEventType: (uuid: string): Promise<AxiosResponse<ApiResponse<EventType>>> => {
+    const config = ENDPOINTS.EVENT_TYPES.GET(uuid);
+    return api.request({ url: config.url, method: config.method });
+  },
+
   // Subscriptions
   getSubscriptions: (): Promise<AxiosResponse<ApiResponse<UserEventMapping[]>>> => {
     const { url, method } = ENDPOINTS.SUBSCRIPTIONS.LIST;
     return api.request({ url, method });
   },
 
-  getSubscription: (id: string | number): Promise<AxiosResponse<ApiResponse<UserEventMapping>>> => {
-    const config = ENDPOINTS.SUBSCRIPTIONS.GET(id);
+  getSubscription: (uuid: string): Promise<AxiosResponse<ApiResponse<UserEventMapping>>> => {
+    const config = ENDPOINTS.SUBSCRIPTIONS.GET(uuid);
     return api.request({ url: config.url, method: config.method });
   },
 
@@ -73,8 +78,8 @@ export const ApiService = {
     return api.request({ url, method, data: payload });
   },
 
-  cancelSubscription: (id: string | number): Promise<AxiosResponse<ApiResponse<UserEventMapping>>> => {
-    const config = ENDPOINTS.SUBSCRIPTIONS.CANCEL(id);
+  cancelSubscription: (uuid: string): Promise<AxiosResponse<ApiResponse<UserEventMapping>>> => {
+    const config = ENDPOINTS.SUBSCRIPTIONS.CANCEL(uuid);
     return api.request({ url: config.url, method: config.method });
   },
 
@@ -89,8 +94,8 @@ export const ApiService = {
     return api.request({ url, method });
   },
 
-  getEventLog: (id: string | number): Promise<AxiosResponse<ApiResponse<WebhookEventLog>>> => {
-    const config = ENDPOINTS.EVENTS.GET(id);
+  getEventLog: (uuid: string): Promise<AxiosResponse<ApiResponse<WebhookEventLog>>> => {
+    const config = ENDPOINTS.EVENTS.GET(uuid);
     return api.request({ url: config.url, method: config.method });
   }
 };

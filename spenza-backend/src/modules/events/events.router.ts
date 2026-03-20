@@ -12,6 +12,6 @@ const logRepo = new WebhookLogRepository();
 const controller = new EventController(eventTypeRepo, logRepo, logger);
 
 router.get('/', authMiddleware, controller.listEvents);
-router.get('/:id', authMiddleware, controller.getEventLog);
+router.get('/:uuid', authMiddleware, controller.getEventLog);
 
 export default router;

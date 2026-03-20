@@ -9,7 +9,7 @@ import type { WebhookEventLog, EventType, LogFilterState } from '../types/api.ty
 
 export default function EventLog() {
   const queryClient = useQueryClient();
-  const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [expandedUuid, setExpandedUuid] = useState<string | null>(null);
 
   // Main Active State (Triggers the API)
   const [activeFilters, setActiveFilters] = useState<LogFilterState>({
@@ -57,7 +57,7 @@ export default function EventLog() {
       page: 1,
       status: '',
       search: '',
-      eventTypeId: undefined
+      eventTypeUuid: undefined
     };
     setTempFilters(reset);
     setActiveFilters(reset);
@@ -141,13 +141,13 @@ export default function EventLog() {
           </select>
 
           <select
-            value={tempFilters.eventTypeId || ''}
-            onChange={(e) => setTempFilters({ ...tempFilters, eventTypeId: e.target.value ? parseInt(e.target.value) : undefined })}
+            value={tempFilters.eventTypeUuid || ''}
+            onChange={(e) => setTempFilters({ ...tempFilters, eventTypeUuid: e.target.value || undefined })}
             className="block w-full px-3 py-2.5 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all bg-slate-50/50 font-medium"
           >
             <option value="">All Event Types</option>
             {eventTypes?.map((type: EventType) => (
-              <option key={type.id} value={type.id}>{type.name}</option>
+              <option key={type.uuid} value={type.uuid}>{type.name}</option>
             ))}
           </select>
 
@@ -174,10 +174,10 @@ export default function EventLog() {
             <thead className="bg-slate-50/50">
               <tr>
                 <th 
-                  onClick={() => toggleSort('id')}
+                  onClick={() => toggleSort('uuid')}
                   className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest w-10 cursor-pointer group hover:bg-slate-100 transition-colors"
                 >
-                  <div className="flex items-center">ID <SortIcon field="id" /></div>
+                  <div className="flex items-center">Trace ID <SortIcon field="uuid" /></div>
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-widest">Type</th>
                 <th 
@@ -209,9 +209,11 @@ export default function EventLog() {
                   </td>
                 </tr>
               ) : logs.map((log: WebhookEventLog) => (
-                <React.Fragment key={log.id}>
-                  <tr className={`hover:bg-slate-50/50 transition-colors ${expandedId === log.id ? 'bg-indigo-50/30' : ''}`}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-mono font-medium text-slate-600">#{log.id}</td>
+                <React.Fragment key={log.uuid}>
+                  <tr className={`hover:bg-slate-50/50 transition-colors ${expandedUuid === log.uuid ? 'bg-indigo-50/30' : ''}`}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-mono font-medium text-slate-600">
+                      <span className="truncate w-24 inline-block" title={log.uuid}>{log.uuid.split('-')[0]}...</span>
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className="text-sm font-semibold text-slate-900">{log.event?.eventType?.name}</span>
                     </td>
@@ -232,18 +234,18 @@ export default function EventLog() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <button
-                        onClick={() => setExpandedId(expandedId === log.id ? null : log.id)}
+                        onClick={() => setExpandedUuid(expandedUuid === log.uuid ? null : log.uuid)}
                         className="inline-flex items-center text-indigo-600 hover:text-indigo-900 font-bold transition-colors"
-                        aria-expanded={expandedId === log.id}
+                        aria-expanded={expandedUuid === log.uuid}
                       >
-                        {expandedId === log.id ? 'Collapse' : 'Inspect'}
+                        {expandedUuid === log.uuid ? 'Collapse' : 'Inspect'}
                         <span className="ml-1">
-                          {expandedId === log.id ? Icons.ChevronUp() : Icons.ChevronDown()}
+                          {expandedUuid === log.uuid ? Icons.ChevronUp() : Icons.ChevronDown()}
                         </span>
                       </button>
                     </td>
                   </tr>
-                  {expandedId === log.id && (
+                  {expandedUuid === log.uuid && (
                     <tr className="bg-slate-50/50">
                       <td colSpan={6} className="px-6 py-8">
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
