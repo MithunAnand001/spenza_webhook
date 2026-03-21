@@ -1,10 +1,10 @@
 import { Request, Response } from 'express';
 import axios from 'axios';
-import { ISubscriptionsService, ILogger } from '../types/interfaces';
-import { CreateSubscriptionSchema } from '../modules/subscriptions/subscriptions.dto';
-import { SpenzaErrorCode } from '../constants/ErrorCodes';
-import { formatDate, DateFormat } from '../utils/date';
-import { ResponseHandler } from '../utils/response-handler';
+import { ISubscriptionsService, ILogger } from '../../../types/interfaces';
+import { CreateSubscriptionSchema } from '../entities/subscriptions.dto';
+import { SpenzaErrorCode } from '../../../constants/ErrorCodes';
+import { formatDate, DateFormat } from '../../../utils/date';
+import { ResponseHandler } from '../../../utils/response-handler';
 import { z } from 'zod';
 
 const TestUrlSchema = z.object({
@@ -16,10 +16,6 @@ export class SubscriptionController {
     private service: ISubscriptionsService,
     private logger: ILogger
   ) {}
-
-  private log(req: Request, methodName: string, message: string, level: string = 'info', meta: any = {}) {
-    (this.logger as any)[level](message, { methodName, requestID: req.requestID, ...meta });
-  }
 
   testUrl = async (req: Request, res: Response) => {
     const validation = TestUrlSchema.safeParse(req.body);
@@ -43,7 +39,7 @@ export class SubscriptionController {
   create = async (req: Request, res: Response) => {
     const parsed = CreateSubscriptionSchema.safeParse(req.body);
     if (!parsed.success) {
-      const errors = parsed.error.issues.map(i => ({ 
+      const errors = parsed.error.issues.map((i: any) => ({ 
         message: i.message, 
         field: i.path.join('.'),
         code: SpenzaErrorCode.VALIDATION_ERROR 
@@ -72,7 +68,7 @@ export class SubscriptionController {
     try {
       this.logger.info(`Listing subscriptions for user ${req.user!.id}`, { methodName: 'list', requestID: req.requestID });
       const subs = await this.service.listSubscriptions(req.user!.id);
-      const formattedSubs = subs.map(sub => ({
+      const formattedSubs = subs.map((sub: any) => ({
         ...sub,
         createdOn: formatDate(sub.createdOn, DateFormat.DISPLAY),
       }));

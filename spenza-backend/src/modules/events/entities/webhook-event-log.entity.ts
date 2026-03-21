@@ -1,8 +1,8 @@
 import { Entity, Column, ManyToOne, JoinColumn, Index } from 'typeorm';
-import { BaseEntity } from '../../database/base.entity';
-import { User } from '../auth/user.entity';
+import { BaseEntity } from '../../../database/base.entity';
+import { User } from '../../auth/entities/user.entity';
 import { Event } from './event.entity';
-import { UserEventMapping } from '../subscriptions/user-event-mapping.entity';
+import { UserEventMapping } from '../../subscriptions/entities/user-event-mapping.entity';
 
 export enum EventLogStatus {
   PENDING = 'pending',
@@ -15,7 +15,6 @@ export enum EventLogStatus {
 @Entity('webhook_event_logs')
 export class WebhookEventLog extends BaseEntity {
   @Column({ name: 'user_id', type: 'int' })
-  @Index()
   userId: number;
 
   @ManyToOne(() => User, (u) => u.eventLogs)
@@ -48,6 +47,7 @@ export class WebhookEventLog extends BaseEntity {
   status: EventLogStatus;
 
   @Column({ name: 'correlation_id', type: 'varchar', length: 255, nullable: true })
+  @Index()
   correlationId: string | null;
 
   @Column({ name: 'attempt_number', type: 'int', default: 0 })

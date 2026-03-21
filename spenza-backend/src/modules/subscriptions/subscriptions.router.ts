@@ -1,10 +1,10 @@
 import { Router } from 'express';
-import { SubscriptionController } from '../../controllers/SubscriptionController';
-import { SubscriptionsService } from './subscriptions.service';
-import { UserEventMappingRepository } from '../../repositories/UserEventMappingRepository';
-import { EventTypeRepository } from '../../repositories/EventTypeRepository';
+import { SubscriptionController } from './controllers/subscriptions.controller';
+import { SubscriptionsService } from './services/subscriptions.service';
+import { UserEventMappingRepository } from './repositories/user-event-mapping.repository';
 import { authMiddleware } from '../../middleware/auth.middleware';
-import { UserConfigurationRepository } from '../../repositories/UserConfigurationRepository';
+import { UserConfigurationRepository } from './repositories/user-configuration.repository';
+import { EventTypeRepository } from '../events/repositories/event-type.repository';
 import { logger } from '../../utils/logger';
 
 const router = Router();

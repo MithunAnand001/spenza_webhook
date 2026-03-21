@@ -1,7 +1,7 @@
 import { Router } from 'express';
-import { EventController } from '../../controllers/EventController';
-import { EventTypeRepository } from '../../repositories/EventTypeRepository';
-import { WebhookLogRepository } from '../../repositories/WebhookLogRepository';
+import { EventController } from './controllers/events.controller';
+import { EventTypeRepository } from './repositories/event-type.repository';
+import { WebhookLogRepository } from './repositories/webhook-log.repository';
 import { authMiddleware } from '../../middleware/auth.middleware';
 import { logger } from '../../utils/logger';
 

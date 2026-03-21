@@ -11,13 +11,13 @@ import { startDeliveryWorker } from './workers/delivery.worker';
 import { requestIdMiddleware } from './middleware/request-id.middleware';
 import { logger } from './utils/logger';
 import { ResponseHandler } from './utils/response-handler';
-import { initSocket } from './modules/events/socket.service';
+import { initSocket } from './modules/events/services/socket.service';
 
 // Routers
 import authRouter from './modules/auth/auth.router';
 import eventTypesRouter from './modules/events/event-types.router';
 import subscriptionsRouter from './modules/subscriptions/subscriptions.router';
-import webhookIngestRouter from './modules/webhooks/webhook-ingest.router';
+import webhookIngestRouter from './modules/webhooks/webhooks.router';
 import eventsRouter from './modules/events/events.router';
 
 dotenv.config();

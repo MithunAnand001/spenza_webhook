@@ -1,10 +1,10 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
-import { User } from './user.entity';
-import { RegisterDto, LoginDto } from './auth.dto';
-import { config } from '../../config';
-import { IUserRepository, IAuthService } from '../../types/interfaces';
+import { User } from '../entities/user.entity';
+import { RegisterDto, LoginDto } from '../entities/auth.dto';
+import { config } from '../../../config';
+import { IUserRepository, IAuthService } from '../../../types/interfaces';
 
 const SALT_ROUNDS = 12;
 

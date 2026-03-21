@@ -1,7 +1,7 @@
 import { Repository } from 'typeorm';
-import { AppDataSource } from '../database/data-source';
-import { WebhookEventLog } from '../modules/events/webhook-event-log.entity';
-import { IWebhookLogRepository } from '../types/interfaces';
+import { AppDataSource } from '../../../database/data-source';
+import { WebhookEventLog } from '../entities/webhook-event-log.entity';
+import { IWebhookLogRepository } from '../../../types/interfaces';
 
 export class WebhookLogRepository implements IWebhookLogRepository {
   private repo: Repository<WebhookEventLog>;

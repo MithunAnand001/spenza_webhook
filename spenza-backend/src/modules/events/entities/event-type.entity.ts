@@ -1,7 +1,7 @@
 import { Entity, Column, OneToMany } from 'typeorm';
-import { BaseEntity } from '../../database/base.entity';
+import { BaseEntity } from '../../../database/base.entity';
 import { Event } from './event.entity';
-import { UserEventMapping } from '../subscriptions/user-event-mapping.entity';
+import { UserEventMapping } from '../../subscriptions/entities/user-event-mapping.entity';
 
 @Entity('event_types')
 export class EventType extends BaseEntity {

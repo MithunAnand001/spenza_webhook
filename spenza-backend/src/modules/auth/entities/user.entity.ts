@@ -1,8 +1,8 @@
 import { Entity, Column, OneToMany } from 'typeorm';
-import { BaseEntity } from '../../database/base.entity';
-import { UserConfiguration } from '../subscriptions/user-configuration.entity';
-import { UserEventMapping } from '../subscriptions/user-event-mapping.entity';
-import { WebhookEventLog } from '../events/webhook-event-log.entity';
+import { BaseEntity } from '../../../database/base.entity';
+import { UserConfiguration } from '../../subscriptions/entities/user-configuration.entity';
+import { UserEventMapping } from '../../subscriptions/entities/user-event-mapping.entity';
+import { WebhookEventLog } from '../../events/entities/webhook-event-log.entity';
 
 @Entity('users')
 export class User extends BaseEntity {

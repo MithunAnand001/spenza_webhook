@@ -1,10 +1,10 @@
 import axios from 'axios';
-import { WebhookLogRepository } from '../repositories/WebhookLogRepository';
-import { UserConfigurationRepository } from '../repositories/UserConfigurationRepository';
-import { UserEventMappingRepository } from '../repositories/UserEventMappingRepository';
-import { EventLogStatus } from '../modules/events/webhook-event-log.entity';
+import { WebhookLogRepository } from '../modules/events/repositories/webhook-log.repository';
+import { UserConfigurationRepository } from '../modules/subscriptions/repositories/user-configuration.repository';
+import { UserEventMappingRepository } from '../modules/subscriptions/repositories/user-event-mapping.repository';
+import { EventLogStatus } from '../modules/events/entities/webhook-event-log.entity';
 import { getChannel } from '../rabbitmq/rabbitmq.service';
-import { broadcastToUser } from '../modules/events/socket.service';
+import { broadcastToUser } from '../modules/events/services/socket.service';
 import { logger } from '../utils/logger';
 import { config } from '../config';
 import { getCurrentDate, addMs } from '../utils/date';

@@ -1,7 +1,7 @@
 import { Router } from 'express';
-import { AuthController } from '../../controllers/AuthController';
-import { AuthService } from './auth.service';
-import { UserRepository } from '../../repositories/UserRepository';
+import { AuthController } from './controllers/auth.controller';
+import { AuthService } from './services/auth.service';
+import { UserRepository } from './repositories/user.repository';
 import { logger } from '../../utils/logger';
 
 const router = Router();

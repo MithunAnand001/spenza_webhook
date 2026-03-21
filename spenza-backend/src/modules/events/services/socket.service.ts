@@ -1,8 +1,8 @@
 import { Server as SocketIOServer } from 'socket.io';
 import { Server as HttpServer } from 'http';
 import jwt from 'jsonwebtoken';
-import { config } from '../../config';
-import { logger } from '../../utils/logger';
+import { config } from '../../../config';
+import { logger } from '../../../utils/logger';
 
 let io: SocketIOServer;
 

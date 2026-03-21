@@ -1,12 +1,12 @@
-import { User } from '../modules/auth/user.entity';
-import { EventType } from '../modules/events/event-type.entity';
-import { Event } from '../modules/events/event.entity';
-import { UserEventMapping } from '../modules/subscriptions/user-event-mapping.entity';
-import { UserConfiguration } from '../modules/subscriptions/user-configuration.entity';
-import { WebhookEventLog } from '../modules/events/webhook-event-log.entity';
-import { RegisterDto, LoginDto } from '../modules/auth/auth.dto';
+import { User } from '../modules/auth/entities/user.entity';
+import { EventType } from '../modules/events/entities/event-type.entity';
+import { Event } from '../modules/events/entities/event.entity';
+import { UserEventMapping } from '../modules/subscriptions/entities/user-event-mapping.entity';
+import { UserConfiguration } from '../modules/subscriptions/entities/user-configuration.entity';
+import { WebhookEventLog } from '../modules/events/entities/webhook-event-log.entity';
+import { RegisterDto, LoginDto } from '../modules/auth/entities/auth.dto';
 import { LoginResult } from './auth.types';
-import { CreateSubscriptionDto } from '../modules/subscriptions/subscriptions.dto';
+import { CreateSubscriptionDto } from '../modules/subscriptions/entities/subscriptions.dto';
 
 // Utils
 export interface ILogger {

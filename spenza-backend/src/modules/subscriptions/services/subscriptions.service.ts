@@ -4,10 +4,10 @@ import {
   IUserConfigurationRepository, 
   ISubscriptionsService,
   IEventTypeRepository 
-} from '../../types/interfaces';
-import { CreateSubscriptionDto } from './subscriptions.dto';
-import { logger } from '../../utils/logger';
-import { CryptoUtil } from '../../utils/crypto';
+} from '../../../types/interfaces';
+import { CreateSubscriptionDto } from '../entities/subscriptions.dto';
+import { logger } from '../../../utils/logger';
+import { CryptoUtil } from '../../../utils/crypto';
 
 export class SubscriptionsService implements ISubscriptionsService {
   constructor(
@@ -76,8 +76,8 @@ export class SubscriptionsService implements ISubscriptionsService {
   async listSubscriptions(userId: number) {
     const mappings = await this.mappingRepo.findByUserId(userId);
     // Remove internal ID before returning
-    return mappings.map(m => {
-      const { id, userId: uid, createdBy, modifiedBy, ...rest } = m as any;
+    return mappings.map((m: any) => {
+      const { id, userId: uid, createdBy, modifiedBy, ...rest } = m;
       if (rest.eventType) {
         const { id: etid, createdBy: etcb, modifiedBy: etmb, ...etRest } = rest.eventType;
         rest.eventType = etRest;

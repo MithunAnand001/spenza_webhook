@@ -1,7 +1,7 @@
 import { Repository } from 'typeorm';
-import { AppDataSource } from '../database/data-source';
-import { UserConfiguration } from '../modules/subscriptions/user-configuration.entity';
-import { IUserConfigurationRepository } from '../types/interfaces';
+import { AppDataSource } from '../../../database/data-source';
+import { UserConfiguration } from '../entities/user-configuration.entity';
+import { IUserConfigurationRepository } from '../../../types/interfaces';
 
 export class UserConfigurationRepository implements IUserConfigurationRepository {
   private repo: Repository<UserConfiguration>;

@@ -1,5 +1,5 @@
 import { Entity, Column, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
-import { BaseEntity } from '../../database/base.entity';
+import { BaseEntity } from '../../../database/base.entity';
 import { EventType } from './event-type.entity';
 import { WebhookEventLog } from './webhook-event-log.entity';
 

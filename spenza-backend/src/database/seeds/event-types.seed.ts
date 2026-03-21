@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import { AppDataSource } from '../data-source';
-import { EventType } from '../../modules/events/event-type.entity';
+import { EventType } from '../../modules/events/entities/event-type.entity';
 
 const seed = async () => {
   await AppDataSource.initialize();

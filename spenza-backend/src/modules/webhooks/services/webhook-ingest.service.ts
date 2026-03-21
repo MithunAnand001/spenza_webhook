@@ -5,9 +5,9 @@ import {
   IWebhookLogRepository, 
   IEventRepository,
   IWebhookIngestService
-} from '../../types/interfaces';
-import { EventLogStatus } from '../events/webhook-event-log.entity';
-import { publishWebhookEvent } from '../../rabbitmq/rabbitmq.service';
+} from '../../../types/interfaces';
+import { EventLogStatus } from '../../events/entities/webhook-event-log.entity';
+import { publishWebhookEvent } from '../../../rabbitmq/rabbitmq.service';
 
 export class WebhookIngestService implements IWebhookIngestService {
   constructor(
@@ -27,13 +27,6 @@ export class WebhookIngestService implements IWebhookIngestService {
     const mapping = await this.mappingRepo.findByUuid(subscriptionUuid);
     if (!mapping || !mapping.isActive) throw new Error('Subscription not found or inactive');
 
-    // Load full mapping with relations to get user UUID
-    const fullMapping = await this.mappingRepo.findById(mapping.id);
-    const userUuid = (fullMapping as any).user?.uuid || (mapping as any).user?.uuid;
-    
-    // We need the user UUID. Let's make sure findByUuid returns the user relation.
-    // I'll check UserEventMappingRepository.findByUuid
-    
     // 2. Load user config for signing secret
     const config = await this.configRepo.findByUserId(mapping.userId);
 
@@ -72,8 +65,6 @@ export class WebhookIngestService implements IWebhookIngestService {
     });
 
     // 6. Publish to RabbitMQ with User UUID
-    // Need to ensure we have the userUuid here.
-    // I will fetch the user directly to be safe.
     const userRepo = (this.mappingRepo as any).repo.manager.getRepository('User');
     const user = await userRepo.findOneBy({ id: mapping.userId });
 

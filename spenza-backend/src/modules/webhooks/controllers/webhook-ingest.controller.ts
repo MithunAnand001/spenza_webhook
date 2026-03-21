@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
-import { IWebhookIngestService, ILogger } from '../types/interfaces';
-import { SpenzaErrorCode } from '../constants/ErrorCodes';
-import { ResponseHandler } from '../utils/response-handler';
+import { IWebhookIngestService, ILogger } from '../../../types/interfaces';
+import { SpenzaErrorCode } from '../../../constants/ErrorCodes';
+import { ResponseHandler } from '../../../utils/response-handler';
 import { z } from 'zod';
 
 const IngestSchema = z.object({
@@ -14,10 +14,6 @@ export class WebhookIngestController {
     private service: IWebhookIngestService,
     private logger: ILogger
   ) {}
-
-  private log(req: Request, methodName: string, message: string, level: string = 'info', meta: any = {}) {
-    (this.logger as any)[level](message, { methodName, requestID: req.requestID, ...meta });
-  }
 
   ingest = async (req: Request, res: Response) => {
     const { subscriptionUuid } = req.params;

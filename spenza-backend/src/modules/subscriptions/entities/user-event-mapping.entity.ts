@@ -1,13 +1,12 @@
-import { Entity, Column, ManyToOne, JoinColumn, Unique, Index } from 'typeorm';
-import { BaseEntity } from '../../database/base.entity';
-import { User } from '../auth/user.entity';
-import { EventType } from '../events/event-type.entity';
+import { Entity, Column, ManyToOne, JoinColumn, Unique } from 'typeorm';
+import { BaseEntity } from '../../../database/base.entity';
+import { User } from '../../auth/entities/user.entity';
+import { EventType } from '../../events/entities/event-type.entity';
 
 @Entity('user_event_mapping')
 @Unique(['userId', 'eventTypeId'])
 export class UserEventMapping extends BaseEntity {
   @Column({ name: 'user_id', type: 'int' })
-  @Index()
   userId: number;
 
   @ManyToOne(() => User, (u) => u.eventMappings)

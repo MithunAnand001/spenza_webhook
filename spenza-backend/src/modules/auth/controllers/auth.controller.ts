@@ -1,11 +1,11 @@
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
-import { IAuthService, ILogger } from '../types/interfaces';
-import { RegisterSchema, LoginSchema } from '../modules/auth/auth.dto';
-import { SpenzaErrorCode } from '../constants/ErrorCodes';
-import { config } from '../config';
-import { UserRepository } from '../repositories/UserRepository';
-import { ResponseHandler } from '../utils/response-handler';
+import { IAuthService, ILogger } from '../../../types/interfaces';
+import { RegisterSchema, LoginSchema } from '../entities/auth.dto';
+import { SpenzaErrorCode } from '../../../constants/ErrorCodes';
+import { config } from '../../../config';
+import { UserRepository } from '../repositories/user.repository';
+import { ResponseHandler } from '../../../utils/response-handler';
 
 export class AuthController {
   constructor(
@@ -16,7 +16,7 @@ export class AuthController {
   register = async (req: Request, res: Response) => {
     const parsed = RegisterSchema.safeParse(req.body);
     if (!parsed.success) {
-      const errors = parsed.error.issues.map(i => ({ 
+      const errors = parsed.error.issues.map((i: any) => ({ 
         message: i.message, 
         field: i.path.join('.'),
         code: SpenzaErrorCode.VALIDATION_ERROR
@@ -44,7 +44,7 @@ export class AuthController {
   login = async (req: Request, res: Response) => {
     const parsed = LoginSchema.safeParse(req.body);
     if (!parsed.success) {
-      const errors = parsed.error.issues.map(i => ({ 
+      const errors = parsed.error.issues.map((i: any) => ({ 
         message: i.message, 
         field: i.path.join('.'),
         code: SpenzaErrorCode.VALIDATION_ERROR
@@ -91,8 +91,17 @@ export class AuthController {
         expiresIn: config.jwt.expiresIn as any,
       });
 
+      this.logger.info(`Token refreshed for user: ${user.emailId}`, { 
+        methodName: 'refresh', 
+        requestID: req.requestID 
+      });
+
       return ResponseHandler.success(res, { accessToken }, 'Token Refreshed');
     } catch (err: unknown) {
+      this.logger.warn(`Token refresh failed: ${err instanceof Error ? err.message : 'Invalid token'}`, { 
+        methodName: 'refresh', 
+        requestID: req.requestID 
+      });
       return ResponseHandler.error(res, 'Invalid refresh token', 'Unauthorized', 401, SpenzaErrorCode.UNAUTHORIZED);
     }
   };

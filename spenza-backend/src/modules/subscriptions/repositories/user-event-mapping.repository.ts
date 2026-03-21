@@ -1,7 +1,7 @@
 import { Repository } from 'typeorm';
-import { AppDataSource } from '../database/data-source';
-import { UserEventMapping } from '../modules/subscriptions/user-event-mapping.entity';
-import { IUserEventMappingRepository } from '../types/interfaces';
+import { AppDataSource } from '../../../database/data-source';
+import { UserEventMapping } from '../entities/user-event-mapping.entity';
+import { IUserEventMappingRepository } from '../../../types/interfaces';
 
 export class UserEventMappingRepository implements IUserEventMappingRepository {
   private repo: Repository<UserEventMapping>;
@@ -39,14 +39,14 @@ export class UserEventMappingRepository implements IUserEventMappingRepository {
   async findById(id: number): Promise<UserEventMapping | null> {
     return this.repo.findOne({
       where: { id },
-      relations: ['eventType'],
+      relations: ['eventType', 'user'],
     });
   }
 
   async findByUuid(uuid: string): Promise<UserEventMapping | null> {
     return this.repo.findOne({
       where: { uuid },
-      relations: ['eventType'],
+      relations: ['eventType', 'user'],
     });
   }
 

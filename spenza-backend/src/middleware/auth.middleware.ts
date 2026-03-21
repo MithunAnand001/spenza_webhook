@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { config } from '../config';
 import { SpenzaErrorCode } from '../constants/ErrorCodes';
-import { UserRepository } from '../repositories/UserRepository';
+import { UserRepository } from '../modules/auth/repositories/user.repository';
 import { ResponseHandler } from '../utils/response-handler';
 
 const userRepo = new UserRepository();

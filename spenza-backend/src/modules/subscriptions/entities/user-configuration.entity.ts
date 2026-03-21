@@ -1,6 +1,6 @@
-import { Entity, Column, ManyToOne, JoinColumn, Index } from 'typeorm';
-import { BaseEntity } from '../../database/base.entity';
-import { User } from '../auth/user.entity';
+import { Entity, Column, ManyToOne, JoinColumn } from 'typeorm';
+import { BaseEntity } from '../../../database/base.entity';
+import { User } from '../../auth/entities/user.entity';
 
 export enum AuthenticationType {
   NONE = 'none',
@@ -12,7 +12,6 @@ export enum AuthenticationType {
 @Entity('user_configurations')
 export class UserConfiguration extends BaseEntity {
   @Column({ name: 'user_id', type: 'int' })
-  @Index()
   userId: number;
 
   @ManyToOne(() => User, (u) => u.configurations)

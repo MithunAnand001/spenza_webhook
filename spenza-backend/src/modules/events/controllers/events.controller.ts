@@ -3,11 +3,11 @@ import {
   IEventTypeRepository, 
   IWebhookLogRepository,
   ILogger
-} from '../types/interfaces';
-import { SpenzaErrorCode } from '../constants/ErrorCodes';
-import { formatDate, DateFormat } from '../utils/date';
+} from '../../../types/interfaces';
+import { SpenzaErrorCode } from '../../../constants/ErrorCodes';
+import { formatDate, DateFormat } from '../../../utils/date';
 import { ILike } from 'typeorm';
-import { ResponseHandler } from '../utils/response-handler';
+import { ResponseHandler } from '../../../utils/response-handler';
 import { z } from 'zod';
 
 const ListEventsSchema = z.object({
@@ -27,16 +27,12 @@ export class EventController {
     private logger: ILogger
   ) {}
 
-  private log(req: Request, methodName: string, message: string, level: string = 'info', meta: any = {}) {
-    (this.logger as any)[level](message, { methodName, requestID: req.requestID, ...meta });
-  }
-
   listEventTypes = async (req: Request, res: Response) => {
     try {
-      this.log(req, 'listEventTypes', 'Fetching active event types');
+      this.logger.info('Fetching active event types', { methodName: 'listEventTypes', requestID: req.requestID });
       const types = await this.eventTypeRepo.findAllActive();
-      const formattedTypes = types.map(t => {
-        const { id, createdBy, modifiedBy, ...rest } = t as any;
+      const formattedTypes = types.map((t: any) => {
+        const { id, createdBy, modifiedBy, ...rest } = t;
         return {
           ...rest,
           createdOn: formatDate(t.createdOn, DateFormat.DISPLAY),
@@ -46,7 +42,7 @@ export class EventController {
       return ResponseHandler.success(res, formattedTypes);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Unknown error';
-      this.log(req, 'listEventTypes', `Error: ${message}`, 'error');
+      this.logger.error(`Error listing event types: ${message}`, { methodName: 'listEventTypes', requestID: req.requestID });
       return ResponseHandler.error(res, message, 'Error', 500, SpenzaErrorCode.INTERNAL_ERROR);
     }
   };
@@ -57,7 +53,7 @@ export class EventController {
       if (!z.string().uuid().safeParse(uuid).success) {
         return ResponseHandler.error(res, 'Invalid UUID format', 'Bad Request', 400, SpenzaErrorCode.BAD_REQUEST);
       }
-      this.log(req, 'getEventType', `Fetching event type ${uuid}`);
+      this.logger.info(`Fetching event type ${uuid}`, { methodName: 'getEventType', requestID: req.requestID });
       const type = await this.eventTypeRepo.findByUuid(uuid);
       if (!type) {
         return ResponseHandler.error(res, 'Event type not found', 'Not Found', 404, SpenzaErrorCode.NOT_FOUND);
@@ -70,7 +66,7 @@ export class EventController {
       });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Unknown error';
-      this.log(req, 'getEventType', `Error: ${message}`, 'error');
+      this.logger.error(`Error getting event type: ${message}`, { methodName: 'getEventType', requestID: req.requestID });
       return ResponseHandler.error(res, message, 'Error', 500, SpenzaErrorCode.INTERNAL_ERROR);
     }
   };
@@ -87,7 +83,10 @@ export class EventController {
       const validSortFields = ['createdOn', 'status', 'responseCode', 'uuid'];
       const field = validSortFields.includes(sortField) ? sortField : 'createdOn';
 
-      this.log(req, 'listEvents', `Fetching events for user ${req.user!.id}, page ${page}, search: ${search}`);
+      this.logger.info(`Fetching events for user ${req.user!.id}, page ${page}, search: ${search}`, { 
+        methodName: 'listEvents', 
+        requestID: req.requestID 
+      });
 
       const where: any = {
         userId: req.user!.id,
@@ -109,8 +108,8 @@ export class EventController {
         take: limit,
       });
 
-      const formattedLogs = logs.map(log => {
-        const { id, userId, eventId, mappingId, createdBy, modifiedBy, ...rest } = log as any;
+      const formattedLogs = logs.map((log: any) => {
+        const { id, userId, eventId, mappingId, createdBy, modifiedBy, ...rest } = log;
         // Clean event and eventType as well
         if (rest.event) {
           const { id: eid, eventTypeId, createdBy: ecb, modifiedBy: emb, ...eRest } = rest.event;
@@ -137,7 +136,7 @@ export class EventController {
       });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Unknown error';
-      this.log(req, 'listEvents', `Error: ${message}`, 'error');
+      this.logger.error(`Error listing events: ${message}`, { methodName: 'listEvents', requestID: req.requestID });
       return ResponseHandler.error(res, message, 'Error', 500, SpenzaErrorCode.INTERNAL_ERROR);
     }
   };
@@ -148,7 +147,7 @@ export class EventController {
       if (!z.string().uuid().safeParse(uuid).success) {
         return ResponseHandler.error(res, 'Invalid UUID format', 'Bad Request', 400, SpenzaErrorCode.BAD_REQUEST);
       }
-      this.log(req, 'getEventLog', `Fetching log ${uuid} for user ${req.user!.id}`);
+      this.logger.info(`Fetching log ${uuid} for user ${req.user!.id}`, { methodName: 'getEventLog', requestID: req.requestID });
       const log = await this.logRepo.findByUuidAndUser(uuid as string, req.user!.id);
       if (!log) {
         return ResponseHandler.error(res, 'Event log not found', 'Not Found', 404, SpenzaErrorCode.NOT_FOUND);
@@ -162,7 +161,7 @@ export class EventController {
       });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Unknown error';
-      this.log(req, 'getEventLog', `Error: ${message}`, 'error');
+      this.logger.error(`Error getting event log: ${message}`, { methodName: 'getEventLog', requestID: req.requestID });
       return ResponseHandler.error(res, message, 'Error', 500, SpenzaErrorCode.INTERNAL_ERROR);
     }
   };

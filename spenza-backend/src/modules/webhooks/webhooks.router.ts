@@ -1,10 +1,10 @@
 import { Router } from 'express';
-import { WebhookIngestController } from '../../controllers/WebhookIngestController';
-import { WebhookIngestService } from './webhook-ingest.service';
-import { UserEventMappingRepository } from '../../repositories/UserEventMappingRepository';
-import { UserConfigurationRepository } from '../../repositories/UserConfigurationRepository';
-import { WebhookLogRepository } from '../../repositories/WebhookLogRepository';
-import { EventRepository } from '../../repositories/EventRepository';
+import { WebhookIngestController } from './controllers/webhook-ingest.controller';
+import { WebhookIngestService } from './services/webhook-ingest.service';
+import { UserEventMappingRepository } from '../subscriptions/repositories/user-event-mapping.repository';
+import { UserConfigurationRepository } from '../subscriptions/repositories/user-configuration.repository';
+import { WebhookLogRepository } from '../events/repositories/webhook-log.repository';
+import { EventRepository } from '../events/repositories/event.repository';
 import { logger } from '../../utils/logger';
 
 const router = Router();

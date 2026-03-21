@@ -1,7 +1,7 @@
 import { Repository } from 'typeorm';
-import { AppDataSource } from '../database/data-source';
-import { EventType } from '../modules/events/event-type.entity';
-import { IEventTypeRepository } from '../types/interfaces';
+import { AppDataSource } from '../../../database/data-source';
+import { EventType } from '../entities/event-type.entity';
+import { IEventTypeRepository } from '../../../types/interfaces';
 
 export class EventTypeRepository implements IEventTypeRepository {
   private repo: Repository<EventType>;
